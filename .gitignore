@@ -1,0 +1,10 @@
+*.o
+*.elf
+*.list
+*.mem
+*.size
+*.d
+.cproject
+.project
+.settings
+*.launch
