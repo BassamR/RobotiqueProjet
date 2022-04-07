@@ -6,5 +6,6 @@
 *.d
 .cproject
 .project
-.settings
 *.launch
+settings/
+lib/
