@@ -7,5 +7,6 @@
 .cproject
 .project
 *.launch
-settings/
+.settings/
 lib/
+build/
