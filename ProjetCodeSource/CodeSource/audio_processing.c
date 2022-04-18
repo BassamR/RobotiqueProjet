@@ -103,6 +103,12 @@ void wait_send_to_computer(void){
 	chBSemWait(&sendToComputer_sem);
 }
 
+/*
+*	Returns buffer pointer of microphone
+*
+*	@params: BUFFER_NAME_t name		microphone name
+*	@return: float*					microphone buffer
+*/
 float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 	if(name == LEFT_CMPLX_INPUT){
 		return micLeft_cmplx_input;
