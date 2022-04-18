@@ -41,16 +41,15 @@ static void alignRobot(float angle);
 *	Callback called when the demodulation of the four microphones is done.
 *	We get 160 samples per mic every 10ms (16kHz)
 *
-*	@params :
+*	@params:
 *	int16_t *data			Buffer containing 4 times 160 samples. the samples are sorted by micro
 *							so we have [micRight1, micLeft1, micBack1, micFront1, micRight2, etc...]
 *	uint16_t num_samples	Tells how many data we get in total (should always be 640)
+*
+*	@return: none
 */
 void processAudioData(int16_t *data, uint16_t num_samples) {
-	/*
-	*	We get 160 samples per mic every 10ms => we fill the samples buffers to reach
-	*	1024 samples, then we compute the FFTs.
-	*/
+	//Fill the samples buffers to reach 1024 samples, then compute FFTs
 
 	for(int i = 0; i < (int)num_samples/4; ++i) {
 		micRight_cmplx_input[positionInBuffer] = data[4*i];
@@ -135,9 +134,11 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 }
 
 /*
-*	Calculates angle of robot (in deg) relative to a noise source using 2 microphones
+*	Calculates angle of robot (in deg) relative to a noise source using 2 microphones (left and right)
+*	(might need to use back and front mics, not sure)
 *
 *	@params: none
+*	@return: none
 */
 static float getAngleFromSource(void) {
 	//get frequency of sound (ie frequency with the highest FFT amplitude)
@@ -151,7 +152,7 @@ static float getAngleFromSource(void) {
 		}
 	}
 
-	// Calculate time shift using FFT argument
+	// Calculate time shift at max amplitude frequency using FFT argument
 	float micLeftArg = atan2f(micLeft_cmplx_input[2*maxFreq + 1], micLeft_cmplx_input[2*maxFreq]);
 	float micRightArg = atan2f(micRight_cmplx_input[2*maxFreq + 1], micRight_cmplx_input[2*maxFreq]);
 	float timeShift = FFT_SIZE * abs(micLeftArg - micRightArg) / (2 * M_PI * maxFreq); //time difference of arrival;
@@ -169,6 +170,7 @@ static float getAngleFromSource(void) {
 *	Rotates the robot to align it with noise source
 *
 *	@params: angle from noise source (in deg)
+*	@return: none
 */
 static void alignRobot(float angle) {
 
