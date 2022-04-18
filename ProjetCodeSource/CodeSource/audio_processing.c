@@ -11,6 +11,11 @@
 #include <fft.h>
 #include <arm_math.h>
 
+#include <math.h>
+
+#define SOUND_SPEED 	34300 	// cm/s
+#define EPUCK_RADIUS    2.675f  // cm
+
 //semaphore
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
 
@@ -25,27 +30,26 @@ static float micRight_output[FFT_SIZE];
 static float micFront_output[FFT_SIZE];
 static float micBack_output[FFT_SIZE];
 
+// Extra static variables and functions
+static int positionInBuffer = 0;
+static int sendToComputer = 0;
+
+static float getAngleFromSource(void);
+static void alignRobot(float angle);
+
 /*
 *	Callback called when the demodulation of the four microphones is done.
 *	We get 160 samples per mic every 10ms (16kHz)
-*	
-*	params :
+*
+*	@params :
 *	int16_t *data			Buffer containing 4 times 160 samples. the samples are sorted by micro
 *							so we have [micRight1, micLeft1, micBack1, micFront1, micRight2, etc...]
 *	uint16_t num_samples	Tells how many data we get in total (should always be 640)
 */
-
-static int positionInBuffer = 0;
-static int sendToComputer = 0;
-
 void processAudioData(int16_t *data, uint16_t num_samples) {
-
 	/*
-	*
-	*	We get 160 samples per mic every 10ms
-	*	So we fill the samples buffers to reach
+	*	We get 160 samples per mic every 10ms => we fill the samples buffers to reach
 	*	1024 samples, then we compute the FFTs.
-	*
 	*/
 
 	for(int i = 0; i < (int)num_samples/4; ++i) {
@@ -80,29 +84,20 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 		arm_cmplx_mag_f32(micBack_cmplx_input, micBack_output, FFT_SIZE);
 		arm_cmplx_mag_f32(micFront_cmplx_input, micFront_output, FFT_SIZE);
 
+		//call functions that need audio data
+		float robotAngle = getAngleFromSource();
+		//alignRobot(angle);
+		chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", robotAngle);
+
 		//send to computer
 		if(sendToComputer == 5) {
 			chBSemSignal(&sendToComputer_sem);
 			sendToComputer = 0;
-
-//			int maxLeftOutput = 0;
-//			float maxFreq = 0;
-//			for(int i = 0; i < FFT_SIZE; ++i) {
-//				if(micLeft_output[i] > maxLeftOutput) {
-//					maxLeftOutput = micLeft_output[i]; //this will contain the biggest amplitude of the FFT
-//					maxFreq = i;
-//				}
-//			}
-//
-//			float newFreq = 15365 - maxFreq * 15; //linear transformation to correct
-//
-//			//chprintf((BaseSequentialStream *)&SDU1, "%nMaxFreq=%.2f \r\n", newFreq);
-
 		} else {
 			++sendToComputer;
 		}
-	}
 
+	}
 }
 
 void wait_send_to_computer(void){
@@ -137,4 +132,44 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 	else{
 		return NULL;
 	}
+}
+
+/*
+*	Calculates angle of robot (in deg) relative to a noise source using 2 microphones
+*
+*	@params: none
+*/
+static float getAngleFromSource(void) {
+	//get frequency of sound (ie frequency with the highest FFT amplitude)
+	float maxLeftOutput = 0;
+	int maxFreq = 0;
+	//run through half the array because FFT gives positive part on [0,512], and negative part on [512, 1024]
+	for(int i = 0; i < FFT_SIZE/2; ++i) {
+		if(micLeft_output[i] > maxLeftOutput) {
+			maxLeftOutput = micLeft_output[i]; //contains the biggest amplitude of the FFT
+			maxFreq = i; //contains the index at which we have the biggest amplitude
+		}
+	}
+
+	// Calculate time shift using FFT argument
+	float micLeftArg = atan2f(micLeft_cmplx_input[2*maxFreq + 1], micLeft_cmplx_input[2*maxFreq]);
+	float micRightArg = atan2f(micRight_cmplx_input[2*maxFreq + 1], micRight_cmplx_input[2*maxFreq]);
+	float timeShift = FFT_SIZE * abs(micLeftArg - micRightArg) / (2 * M_PI * maxFreq); //time difference of arrival;
+
+	// Calculate angle in deg
+	float cosineArgument = SOUND_SPEED * timeShift/(2*EPUCK_RADIUS);
+	if(cosineArgument > 1) cosineArgument = 1;
+	if(cosineArgument < -1) cosineArgument = -1; //safety to avoid taking arccos of undefined values
+	float angle = acos(cosineArgument) * 180/M_PI;
+
+	return angle;
+}
+
+/*
+*	Rotates the robot to align it with noise source
+*
+*	@params: angle from noise source (in deg)
+*/
+static void alignRobot(float angle) {
+
 }
