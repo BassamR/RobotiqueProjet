@@ -34,11 +34,7 @@ static float micBack_output[FFT_SIZE];
 *							so we have [micRight1, micLeft1, micBack1, micFront1, micRight2, etc...]
 *	uint16_t num_samples	Tells how many data we get in total (should always be 640)
 */
-
-static int positionInBuffer = 0;
-static int sendToComputer = 0;
-
-void processAudioData(int16_t *data, uint16_t num_samples) {
+void processAudioData(int16_t *data, uint16_t num_samples){
 
 	/*
 	*
@@ -48,62 +44,9 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 	*
 	*/
 
-	for(int i = 0; i < (int)num_samples/4; ++i) {
-		micRight_cmplx_input[positionInBuffer] = data[4*i];
-		micLeft_cmplx_input[positionInBuffer] = data[4*i + 1];
-		micBack_cmplx_input[positionInBuffer] = data[4*i + 2];
-		micFront_cmplx_input[positionInBuffer] = data[4*i + 3];
-
-		micRight_cmplx_input[positionInBuffer + 1] = 0; //imaginary part = 0
-		micLeft_cmplx_input[positionInBuffer + 1] = 0;
-		micBack_cmplx_input[positionInBuffer + 1] = 0;
-		micFront_cmplx_input[positionInBuffer + 1] = 0;
-
-		positionInBuffer += 2;
-
-		if(positionInBuffer >= 2*FFT_SIZE) break; //finished filling up the 2*1024 buffer
-	}
-
-	if(positionInBuffer >= 2*FFT_SIZE) {
-		//reset positionInBuffer
-		positionInBuffer = 0;
-
-		//compute FFT
-		doFFT_optimized(FFT_SIZE, micRight_cmplx_input);
-		doFFT_optimized(FFT_SIZE, micLeft_cmplx_input);
-		doFFT_optimized(FFT_SIZE, micBack_cmplx_input);
-		doFFT_optimized(FFT_SIZE, micFront_cmplx_input);
-
-		//compute magnitude of FFT
-		arm_cmplx_mag_f32(micRight_cmplx_input, micRight_output, FFT_SIZE);
-		arm_cmplx_mag_f32(micLeft_cmplx_input, micLeft_output, FFT_SIZE);
-		arm_cmplx_mag_f32(micBack_cmplx_input, micBack_output, FFT_SIZE);
-		arm_cmplx_mag_f32(micFront_cmplx_input, micFront_output, FFT_SIZE);
-
-		//send to computer
-		if(sendToComputer == 5) {
-			chBSemSignal(&sendToComputer_sem);
-			sendToComputer = 0;
-
-//			int maxLeftOutput = 0;
-//			float maxFreq = 0;
-//			for(int i = 0; i < FFT_SIZE; ++i) {
-//				if(micLeft_output[i] > maxLeftOutput) {
-//					maxLeftOutput = micLeft_output[i]; //this will contain the biggest amplitude of the FFT
-//					maxFreq = i;
-//				}
-//			}
-//
-//			float newFreq = 15365 - maxFreq * 15; //linear transformation to correct
-//
-//			//chprintf((BaseSequentialStream *)&SDU1, "%nMaxFreq=%.2f \r\n", newFreq);
-
-		} else {
-			++sendToComputer;
-		}
-	}
-
+	
 }
+
 
 void wait_send_to_computer(void){
 	chBSemWait(&sendToComputer_sem);

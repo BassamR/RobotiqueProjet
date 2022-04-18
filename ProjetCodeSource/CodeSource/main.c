@@ -16,16 +16,21 @@
 #include <communications.h>
 #include <arm_math.h>
 
+#include <spi_comm.h> //works even without that
+#include <leds.h>
+#include <sensors/VL53L0X/VL53L0X.h>
+#include <audio/audio_thread.h>
+//#include "VL53L0X.h"
 //uncomment to send the FFTs results from the real microphones
-#define SEND_FROM_MIC
+//#define SEND_FROM_MIC
 
 //uncomment to use double buffering to send the FFT to the computer
 #define DOUBLE_BUFFERING
+#define sensitivity 20
+#define max_count 250
 
-//time measurement
-//#define MEASURE_TIME
-
-static void serial_start(void) {
+static void serial_start(void)
+{
 	static SerialConfig ser_cfg = {
 	    115200,
 	    0,
@@ -36,23 +41,37 @@ static void serial_start(void) {
 	sdStart(&SD3, &ser_cfg); // UART3.
 }
 
-static void timer12_start(void) {
-    //General Purpose Timer configuration   
-    //timer 12 is a 16 bit timer so we can measure time
-    //to about 65ms with a 1Mhz counter
-    static const GPTConfig gpt12cfg = {
-        1000000,        /* 1MHz timer clock in order to measure uS.*/
-        NULL,           /* Timer callback.*/
-        0,
-        0
-    };
-
-    gptStart(&GPTD12, &gpt12cfg);
-    //let the timer count to max value
-    gptStartContinuous(&GPTD12, 0xFFFF);
+//static bool siren_freq=1; //start at 1 with the low freq
+static THD_WORKING_AREA(waRGBThd, 128);
+static THD_FUNCTION(RGBThd, arg) {
+	chRegSetThreadName("RGB leds thread");
+	(void)arg;
+	set_rgb_led(LED4,RGB_MAX_INTENSITY,0,0);  //open the red leds first to create a delay
+	set_rgb_led(LED8,RGB_MAX_INTENSITY,0,0);
+	//siren_freq=!siren_freq;
+	while(1){
+		toggle_rgb_led(LED2, BLUE_LED,RGB_MAX_INTENSITY);
+		toggle_rgb_led(LED4, RED_LED,RGB_MAX_INTENSITY);
+		toggle_rgb_led(LED6, BLUE_LED,RGB_MAX_INTENSITY);
+		toggle_rgb_led(LED8, RED_LED,RGB_MAX_INTENSITY);
+	/*
+		if (siren_freq==false){
+			dac_stopI();
+			dac_play(705);
+		}
+		else{
+			dac_stopI();
+			dac_play(933);
+		}
+	*/
+		uint16_t freq_buffer[2]={705,933};
+		dac_play_buffer(freq_buffer,2,1,NULL);
+		chThdSleepMilliseconds(500); //make it yield?
+	}
 }
 
-int main(void) {
+
+int main(void){
 
     halInit();
     chSysInit();
@@ -62,91 +81,67 @@ int main(void) {
     serial_start();
     //starts the USB communication
     usb_start();
-    //starts timer 12
-    timer12_start();
     //inits the motors
     motors_init();
+    //start spi communication for the rgb leds
+    spi_comm_start();
+    //start the ToF
+    VL53L0X_start();
+    //start the speakers
+    dac_start();
 
-    //send_tab is used to save the state of the buffer to send (double buffering)
-    //to avoid modifications of the buffer while sending it
-    static float send_tab[FFT_SIZE];
+    uint16_t reference = 0;
+    uint16_t dist_to_perp = 0;
+    reference = set_ref(); //make a sensor stabilization loop
+    dist_to_perp = reference; //needs to be initialized non zero
+    // chprintf((BaseSequentialStream *)&SD3, "%u \r\n", reference);
+    uint16_t count = 0;
 
-#ifdef SEND_FROM_MIC
-    //starts the microphones processing thread.
-    //it calls the callback given in parameter when samples are ready
-    mic_start(&processAudioData);
-#endif  /* SEND_FROM_MIC */
-
-    /* Infinite loop. */
-    while (1) {
-#ifdef SEND_FROM_MIC
-        //waits until a result must be sent to the computer
-        wait_send_to_computer();
-#ifdef DOUBLE_BUFFERING
-        //we copy the buffer to avoid conflicts
-        arm_copy_f32(get_audio_buffer_ptr(LEFT_OUTPUT), send_tab, FFT_SIZE);
-        SendFloatToComputer((BaseSequentialStream *) &SD3, send_tab, FFT_SIZE);
-#else
-        SendFloatToComputer((BaseSequentialStream *) &SD3, get_audio_buffer_ptr(LEFT_OUTPUT), FFT_SIZE);
-#endif  /* DOUBLE_BUFFERING */
-#else
-
-        float* bufferCmplxInput = get_audio_buffer_ptr(LEFT_CMPLX_INPUT);
-        float* bufferOutput = get_audio_buffer_ptr(LEFT_OUTPUT);
-
-        uint16_t size = ReceiveInt16FromComputer((BaseSequentialStream *) &SD3, bufferCmplxInput, FFT_SIZE);
-
-        if(size == FFT_SIZE) {
-
-        	static complex_float convertedCmplxArray[FFT_SIZE]; //already a pointer
-        	//equivalent to static complex_float* convertedCmplxArray; except above we reserve FFT_SIZE slots and here we don't
-        	//converts bufferCmplxInput to an array of half the size, each cell containing re(z)+i*im(z)
-        	// bufferCmplxInput is of the form [re1, im1, re2, im2, ...]
-
-        	// convert array to correct form
-//        	for(int i = 0; i < FFT_SIZE; ++i) {
-//        		convertedCmplxArray[i].real = bufferCmplxInput[2*i];
-//        		convertedCmplxArray[i].imag = bufferCmplxInput[2*i + 1];
-//        	}
-
-#ifdef MEASURE_TIME
-        	volatile uint16_t time = 0;
-        	chSysLock();
-        	//reset the timer counter
-        	GPTD12.tim->CNT = 0;
-
-        	//-> Functions to measure <-//
-        	//call unoptimized FFT
-        	//doFFT_c(FFT_SIZE, convertedCmplxArray);
-            doFFT_optimized(FFT_SIZE, bufferCmplxInput);
-
-        	time = GPTD12.tim->CNT;
-        	chSysUnlock();
-        	chprintf((BaseSequentialStream *)&SDU1, "time=%dus\n", time);
-#else
-        	//call unoptimized FFT
-        	//doFFT_c(FFT_SIZE, convertedCmplxArray);
-            doFFT_optimized(FFT_SIZE, bufferCmplxInput);
-#endif
-
-        	//reconvert convertedCmplxArray to an array of size 2*FFT_SIZE for the rest of the code
-//        	for(int i = 0; i < FFT_SIZE; ++i) {
-//        		bufferCmplxInput[2*i] = convertedCmplxArray[i].real;
-//        		bufferCmplxInput[2*i + 1] = convertedCmplxArray[i].imag;
-//        	}
-
-            arm_cmplx_mag_f32(bufferCmplxInput, bufferOutput, FFT_SIZE);
-
-            SendFloatToComputer((BaseSequentialStream *) &SD3, bufferOutput, FFT_SIZE);
-
-        }
-#endif  /* SEND_FROM_MIC */
+    while (true){
+    	uint16_t distance = VL53L0X_get_dist_mm();
+    	//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", distance);
+    	if (distance<=reference-20){
+    		++count;
+    		dist_to_perp=distance;
+    		//reference=distance; this should only be used if the object stays for a while infront of the tof to set a new reference
+    		chprintf((BaseSequentialStream *)&SD3, "%u \r\n", count);
+    	}else if (distance>=dist_to_perp+20){
+    		if (count<=250) { //case object was fast
+    			//call function to estimate speed then activate the lights
+    			chprintf((BaseSequentialStream *)&SD3, "%u \r\n", count);
+    			chThdCreateStatic(waRGBThd, sizeof(waRGBThd), NORMALPRIO, RGBThd, NULL);
+    			//set_rgb_led(LED2,0,0,RGB_MAX_INTENSITY);
+    		}
+    		//reference=distance;
+    		dist_to_perp=distance;
+    		count=0;
+    	}
     }
 }
 
 #define STACK_CHK_GUARD 0xe2dee396
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD;
 
-void __stack_chk_fail(void) {
+void __stack_chk_fail(void)
+{
     chSysHalt("Stack smashing detected");
 }
+
+uint16_t set_ref(void){  //you need to skip a bunch of measurments at startup because theyre not correct
+	uint16_t ref = 0;
+	for (int i=0; i<=1000;++i){
+		ref= VL53L0X_get_dist_mm();
+		// how to use the dsp instructions??
+		chprintf((BaseSequentialStream *)&SD3, "%u \r\n", ref); //need to uncomment this line for ref to keep that final value for some weird reason
+	} //run 10buffer cycles
+	//uint16_t error= 10;
+	//while(abs(ref-VL53L0X_get_dist_mm())<= error) {
+		//ref=VL53L0X_get_dist_mm();
+
+	//}
+	//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", ref);
+	return ref;
+}
+
+
+
