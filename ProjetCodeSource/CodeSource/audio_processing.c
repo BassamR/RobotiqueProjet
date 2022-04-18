@@ -160,7 +160,7 @@ static float getAngleFromSource(void) {
 	float cosineArgument = SOUND_SPEED * timeShift/(2*EPUCK_RADIUS);
 	if(cosineArgument > 1) cosineArgument = 1;
 	if(cosineArgument < -1) cosineArgument = -1; //safety to avoid taking arccos of undefined values
-	float angle = acos(cosineArgument) * 180/M_PI;
+	float angle = acosf(cosineArgument) * 180/M_PI;
 
 	return angle;
 }
