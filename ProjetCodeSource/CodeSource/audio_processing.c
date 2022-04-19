@@ -13,8 +13,9 @@
 
 #include <math.h>
 
-#define SOUND_SPEED 	34300 	// cm/s
-#define EPUCK_RADIUS    2.675f  // cm
+#define SOUND_SPEED 			34300 	// cm/s
+#define EPUCK_RADIUS    		2.675f  // cm
+#define AMPLITUDE_THRESHOLD		15000
 
 //semaphore
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
@@ -83,15 +84,15 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 		arm_cmplx_mag_f32(micBack_cmplx_input, micBack_output, FFT_SIZE);
 		arm_cmplx_mag_f32(micFront_cmplx_input, micFront_output, FFT_SIZE);
 
-		//call functions that need audio data
-		float robotAngle = getAngleFromSource();
-		//alignRobot(angle);
-		chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", robotAngle);
-
 		//send to computer
 		if(sendToComputer == 5) {
 			chBSemSignal(&sendToComputer_sem);
 			sendToComputer = 0;
+
+			//call functions that need audio data
+			float robotAngle = getAngleFromSource();
+			//alignRobot(angle);
+			chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", robotAngle);
 		} else {
 			++sendToComputer;
 		}
@@ -144,7 +145,7 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 *	(might need to use back and front mics, not sure)
 *
 *	@params: none
-*	@return: none
+*	@return: float angle from source in deg
 */
 static float getAngleFromSource(void) {
 	//get frequency of sound (ie frequency with the highest FFT amplitude)
@@ -158,10 +159,13 @@ static float getAngleFromSource(void) {
 		}
 	}
 
+	//if the biggest amplitude is smaller than a certain threshold (ie a clear sound isnt being played), do nothing
+	if(maxLeftOutput < AMPLITUDE_THRESHOLD) return 0;
+
 	// Calculate time shift at max amplitude frequency using FFT argument
 	float micLeftArg = atan2f(micLeft_cmplx_input[2*maxFreq + 1], micLeft_cmplx_input[2*maxFreq]);
 	float micRightArg = atan2f(micRight_cmplx_input[2*maxFreq + 1], micRight_cmplx_input[2*maxFreq]);
-	float timeShift = FFT_SIZE * abs(micLeftArg - micRightArg) / (2 * M_PI * maxFreq); //time difference of arrival;
+	float timeShift = FFT_SIZE * (micLeftArg - micRightArg) / (2 * M_PI * maxFreq); //time difference of arrival;
 
 	// Calculate angle in deg
 	float cosineArgument = SOUND_SPEED * timeShift/(2*EPUCK_RADIUS);
