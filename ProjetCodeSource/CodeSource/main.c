@@ -20,12 +20,7 @@
 #include <leds.h>
 #include <sensors/VL53L0X/VL53L0X.h>
 #include <audio/audio_thread.h>
-//#include "VL53L0X.h"
-//uncomment to send the FFTs results from the real microphones
-//#define SEND_FROM_MIC
 
-//uncomment to use double buffering to send the FFT to the computer
-#define DOUBLE_BUFFERING
 #define sensitivity 20
 #define max_count 250
 
@@ -41,31 +36,33 @@ static void serial_start(void)
 	sdStart(&SD3, &ser_cfg); // UART3.
 }
 
-//static bool siren_freq=1; //start at 1 with the low freq
+static bool siren_freq=1; //start at 1 with the low freq
 static THD_WORKING_AREA(waRGBThd, 128);
 static THD_FUNCTION(RGBThd, arg) {
 	chRegSetThreadName("RGB leds thread");
 	(void)arg;
 	set_rgb_led(LED4,RGB_MAX_INTENSITY,0,0);  //open the red leds first to create a delay
 	set_rgb_led(LED8,RGB_MAX_INTENSITY,0,0);
-	//siren_freq=!siren_freq;
+	siren_freq=!siren_freq;
 	while(1){
 		toggle_rgb_led(LED2, BLUE_LED,RGB_MAX_INTENSITY);
 		toggle_rgb_led(LED4, RED_LED,RGB_MAX_INTENSITY);
 		toggle_rgb_led(LED6, BLUE_LED,RGB_MAX_INTENSITY);
 		toggle_rgb_led(LED8, RED_LED,RGB_MAX_INTENSITY);
-	/*
+
 		if (siren_freq==false){
 			dac_stopI();
+			dac_start();
 			dac_play(705);
 		}
 		else{
 			dac_stopI();
+			dac_start();
 			dac_play(933);
 		}
-	*/
-		uint16_t freq_buffer[2]={705,933};
-		dac_play_buffer(freq_buffer,2,1,NULL);
+
+		//uint16_t freq_buffer[2]={705,933};
+		//dac_play_buffer(freq_buffer,2,1,NULL);
 		chThdSleepMilliseconds(500); //make it yield?
 	}
 }
