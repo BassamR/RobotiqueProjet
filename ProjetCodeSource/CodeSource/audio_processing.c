@@ -15,7 +15,7 @@
 
 #define SOUND_SPEED 			34300 	// cm/s
 #define EPUCK_RADIUS    		2.675f  // cm
-#define AMPLITUDE_THRESHOLD		15000
+#define AMPLITUDE_THRESHOLD		100
 
 //semaphore
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
@@ -92,7 +92,7 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 			//call functions that need audio data
 			float robotAngle = getAngleFromSource();
 			//alignRobot(angle);
-			chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", robotAngle);
+			chprintf((BaseSequentialStream *)&SD3, "%nAngle=%.2f \r\n", robotAngle);
 		} else {
 			++sendToComputer;
 		}
@@ -148,6 +148,7 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 *	@return: float angle from source in deg
 */
 static float getAngleFromSource(void) {
+
 	//get frequency of sound (ie frequency with the highest FFT amplitude)
 	float maxLeftOutput = 0;
 	int maxFreq = 0;
@@ -165,8 +166,8 @@ static float getAngleFromSource(void) {
 	// Calculate time shift at max amplitude frequency using FFT argument
 	float micLeftArg = atan2f(micLeft_cmplx_input[2*maxFreq + 1], micLeft_cmplx_input[2*maxFreq]);
 	float micRightArg = atan2f(micRight_cmplx_input[2*maxFreq + 1], micRight_cmplx_input[2*maxFreq]);
-	float timeShift = FFT_SIZE * (micLeftArg - micRightArg) / (2 * M_PI * maxFreq); //time difference of arrival;
-
+	float timeShift = FFT_SIZE * (micLeftArg - micRightArg) / (2 * M_PI * maxFreq)*0.00001; //time difference of arrival;
+	//chprintf((BaseSequentialStream *)&SD3, "%ntimeShift=%.2f \r\n", timeShift);
 	// Calculate angle in deg
 	float cosineArgument = SOUND_SPEED * timeShift/(2*EPUCK_RADIUS);
 	if(cosineArgument > 1) cosineArgument = 1;
