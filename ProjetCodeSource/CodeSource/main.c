@@ -36,6 +36,9 @@ static void serial_start(void)
 	sdStart(&SD3, &ser_cfg); // UART3.
 }
 
+enum state {Detect,Chase};
+
+
 static bool siren_freq=1; //start at 1 with the low freq
 static THD_WORKING_AREA(waRGBThd, 128);
 static THD_FUNCTION(RGBThd, arg) {
@@ -85,35 +88,42 @@ int main(void){
     //start the speakers
     dac_start();
 
-    uint16_t reference = 0;
-    uint16_t dist_to_perp = 0;
-    reference = set_ref(); //make a sensor stabilization loop
-    dist_to_perp = reference; //needs to be initialized non zero
-    // chprintf((BaseSequentialStream *)&SD3, "%u \r\n", reference);
-    uint16_t count = 0;
-
     while (true){
-    	uint16_t distance = VL53L0X_get_dist_mm();
-    	//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", distance);
-    	if (distance<=reference-20){
-    		++count;
-    		dist_to_perp=distance;
-    		//reference=distance; this should only be used if the object stays for a while infront of the tof to set a new reference
-    		chprintf((BaseSequentialStream *)&SD3, "%u \r\n", count);
-    	}else if (distance>=dist_to_perp+20){
-    		if (count<=250) { //case object was fast \\pbl is this will acivate if the reference moves can make it more robust
-    			//call function to estimate speed then activate the lights
+
+    	enum state current_state=Detect;
+    	uint16_t reference = 0;
+    	uint16_t dist_to_perp = 0;
+    	reference = set_ref(); //make a sensor stabilization loop
+    	dist_to_perp = reference; //needs to be initialized non zero
+    	uint16_t count = 0;
+
+    	while (current_state==Detect){
+    		uint16_t distance = VL53L0X_get_dist_mm();
+    		//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", distance);
+    		if (distance<=reference-20){
+    			++count;
+    			dist_to_perp=distance;
+    			//reference=distance; this should only be used if the object stays for a while infront of the tof to set a new reference
     			chprintf((BaseSequentialStream *)&SD3, "%u \r\n", count);
-    			chThdCreateStatic(waRGBThd, sizeof(waRGBThd), NORMALPRIO, RGBThd, NULL);
-    			//set_rgb_led(LED2,0,0,RGB_MAX_INTENSITY);
+    		}else if (distance>=dist_to_perp+20){
+    			if (count<=250) { //case object was fast \\pbl is this will acivate if the reference moves can make it more robust
+    				//call function to estimate speed then activate the lights
+    				chprintf((BaseSequentialStream *)&SD3, "%u \r\n", count);
+    				chThdCreateStatic(waRGBThd, sizeof(waRGBThd), NORMALPRIO, RGBThd, NULL);
+    				// here we should break from the while loop because the detection state will be over start chase state
+    				current_state=Chase;
+    			}
+    			//reference=distance;
+    			dist_to_perp=distance;
+    			count=0;
     		}
-    		//reference=distance;
-    		dist_to_perp=distance;
-    		count=0;
+    	}
+
+    	while (current_state==Chase){
+    		chprintf((BaseSequentialStream *)&SD3, "%nChase mode is active \r\n");
     	}
     }
 }
-
 #define STACK_CHK_GUARD 0xe2dee396
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD;
 
