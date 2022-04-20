@@ -43,21 +43,19 @@ static THD_FUNCTION(RGBThd, arg) {
 	(void)arg;
 	set_rgb_led(LED4,RGB_MAX_INTENSITY,0,0);  //open the red leds first to create a delay
 	set_rgb_led(LED8,RGB_MAX_INTENSITY,0,0);
-	siren_freq=!siren_freq;
 	while(1){
+		siren_freq=!siren_freq;
+		dac_stop();
+		dac_start();
 		toggle_rgb_led(LED2, BLUE_LED,RGB_MAX_INTENSITY);
 		toggle_rgb_led(LED4, RED_LED,RGB_MAX_INTENSITY);
 		toggle_rgb_led(LED6, BLUE_LED,RGB_MAX_INTENSITY);
 		toggle_rgb_led(LED8, RED_LED,RGB_MAX_INTENSITY);
 
 		if (siren_freq==false){
-			dac_stopI();
-			dac_start();
 			dac_play(705);
 		}
 		else{
-			dac_stopI();
-			dac_start();
 			dac_play(933);
 		}
 
@@ -103,7 +101,7 @@ int main(void){
     		//reference=distance; this should only be used if the object stays for a while infront of the tof to set a new reference
     		chprintf((BaseSequentialStream *)&SD3, "%u \r\n", count);
     	}else if (distance>=dist_to_perp+20){
-    		if (count<=250) { //case object was fast
+    		if (count<=250) { //case object was fast \\pbl is this will acivate if the reference moves can make it more robust
     			//call function to estimate speed then activate the lights
     			chprintf((BaseSequentialStream *)&SD3, "%u \r\n", count);
     			chThdCreateStatic(waRGBThd, sizeof(waRGBThd), NORMALPRIO, RGBThd, NULL);
