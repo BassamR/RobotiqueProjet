@@ -17,17 +17,15 @@ typedef enum {
 	BACK_OUTPUT
 } BUFFER_NAME_t;
 
-
+//Convert microphone data into readable arrays
 void processAudioData(int16_t *data, uint16_t num_samples);
 
-/*
-*	put the invoking thread into sleep until it can process the audio datas
-*/
+//Put the invoking thread into sleep until it can process the audio datas
 void wait_send_to_computer(void);
 
-/*
-*	Returns the pointer to the BUFFER_NAME_t buffer asked
-*/
+//Returns the pointer to the BUFFER_NAME_t buffer asked
 float* get_audio_buffer_ptr(BUFFER_NAME_t name);
+
+//
 
 #endif /* AUDIO_PROCESSING_H */
