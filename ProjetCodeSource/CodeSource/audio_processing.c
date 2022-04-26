@@ -92,7 +92,7 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 			//call functions that need audio data
 			float robotAngle = getAngleFromSource();
 			//alignRobot(angle);
-			chprintf((BaseSequentialStream *)&SD3, "%nAngle=%.2f \r\n", robotAngle);
+			chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", robotAngle);
 		} else {
 			++sendToComputer;
 		}
@@ -166,10 +166,13 @@ static float getAngleFromSource(void) {
 	// Calculate time shift at max amplitude frequency using FFT argument
 	float micLeftArg = atan2f(micLeft_cmplx_input[2*maxFreq + 1], micLeft_cmplx_input[2*maxFreq]);
 	float micRightArg = atan2f(micRight_cmplx_input[2*maxFreq + 1], micRight_cmplx_input[2*maxFreq]);
-	float timeShift = FFT_SIZE * (micLeftArg - micRightArg) / (2 * M_PI * maxFreq)*0.00001; //time difference of arrival;
-	//chprintf((BaseSequentialStream *)&SD3, "%ntimeShift=%.2f \r\n", timeShift);
+	float timeShift = 0.00001 * FFT_SIZE * (micRightArg - micLeftArg) / (2 * M_PI * maxFreq); //time difference of arrival;
+	//why do i need to scale by 10^-5 ?
+	//chprintf((BaseSequentialStream *)&SDU1, "%ntimeShift=%.2f \r\n", timeShift);
+
 	// Calculate angle in deg
-	float cosineArgument = SOUND_SPEED * timeShift/(2*EPUCK_RADIUS);
+	//float cosineArgument = SOUND_SPEED * timeShift/(2*EPUCK_RADIUS);
+	float cosineArgument = SOUND_SPEED * timeShift; //why does this work better????
 	if(cosineArgument > 1) cosineArgument = 1;
 	if(cosineArgument < -1) cosineArgument = -1; //safety to avoid taking arccos of undefined values
 	float angle = acosf(cosineArgument) * 180/M_PI;
