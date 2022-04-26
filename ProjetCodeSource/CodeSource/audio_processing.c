@@ -187,5 +187,7 @@ static float getAngleFromSource(void) {
 *	@return: none
 */
 static void alignRobot(float angle) {
-
+	//need a PD regulator
+	//right_motor_set_speed(speed - ROTATION_COEFF * speed_correction);
+	//left_motor_set_speed(speed + ROTATION_COEFF * speed_correction);
 }
