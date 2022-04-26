@@ -8,8 +8,8 @@
 #include <arm_const_structs.h>
 
 /* Define complex multiplication and its conjugate */
-#define  rmul(x,y)      (x.real * y.real - x.imag * y.imag)
-#define  imul(x,y)      (x.imag * y.real + x.real * y.imag)
+#define  rmul(x,y)      (x.real * y.real - x.imag * y.imag) //real part of x*y
+#define  imul(x,y)      (x.imag * y.real + x.real * y.imag) //imaginary part of x*y
 #define rcmul(x,y)      (x.real * y.real + x.imag * y.imag)
 #define icmul(x,y)      (x.imag * y.real - x.real * y.imag)
 
@@ -21,8 +21,7 @@
 *	Processing occurs in-place
 *
 */
-int fft_c(int lx, complex_float* cx, float signi)
-{
+int fft_c(int lx, complex_float* cx, float signi) {
 	/* Declare all local variables */
 	int i, j, k, m, istep;
 	float arg;
