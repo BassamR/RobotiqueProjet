@@ -9,7 +9,7 @@ extern "C" {
 #include "msgbus/messagebus.h"
 #include "parameter/parameter.h"
 
-uint16_t set_ref(void);
+
 /** Robot wide IPC bus. */
 extern messagebus_t bus;
 
