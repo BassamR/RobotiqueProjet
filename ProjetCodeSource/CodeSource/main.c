@@ -25,8 +25,7 @@
 #define sensitivity 20
 #define max_count 250
 
-static void serial_start(void)
-{
+static void serial_start(void) {
 	static SerialConfig ser_cfg = {
 	    115200,
 	    0,
@@ -39,7 +38,7 @@ static void serial_start(void)
 
 enum state {Detect,Chase};
 
-int main(void){
+int main(void) {
 
     halInit();
     chSysInit();
@@ -57,7 +56,7 @@ int main(void){
     mic_start(&processAudioData);
 
 
-    while (true){
+    while (true) {
 
     	enum state current_state=Detect;
     	uint16_t reference = 0;
@@ -66,7 +65,7 @@ int main(void){
     	dist_to_perp = reference; //needs to be initialized non zero
     	uint16_t count = 0;
 
-    	while (current_state==Detect){
+    	while (current_state==Detect) {
     		uint16_t distance = VL53L0X_get_dist_mm();
     		//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", distance);
     		if (distance<=reference-20){
@@ -87,13 +86,12 @@ int main(void){
     	}
 
     	//start the siren thread
-    	//siren_start();
+    	siren_start();
     	//start the pid thread
     	pid_regulator_start(); //careful where you place this, it should be called only once otherwise panics
 
     	while (current_state==Chase){
-    		chprintf((BaseSequentialStream *)&SD3, "%nChase mode is active \r\n");
-
+    		//chprintf((BaseSequentialStream *)&SD3, "%nChase mode is active \r\n");
     	}
     }
 }
