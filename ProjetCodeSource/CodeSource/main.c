@@ -67,7 +67,7 @@ int main(void) {
 
     	while (current_state==Detect) {
     		uint16_t distance = VL53L0X_get_dist_mm();
-    		//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", distance);
+    		//chprintf((BaseSequentialStream *)&SDU1, "%u \r\n", distance);
     		if (distance<=reference-20){
     			++count;
     			dist_to_perp=distance;
