@@ -35,8 +35,7 @@ static float micBack_output[FFT_SIZE];
 static int positionInBuffer = 0;
 static int sendToComputer = 0;
 
-static float getAngleFromSource(void);
-static void alignRobot(float angle);
+//static void alignRobot(float angle);
 
 /*
 *	Callback called when the demodulation of the four microphones is done.
@@ -91,8 +90,8 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 
 			//call functions that need audio data
 			float robotAngle = getAngleFromSource();
-			//alignRobot(angle);
-			chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", robotAngle);
+			alignRobot(robotAngle);
+			//chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", robotAngle);
 		} else {
 			++sendToComputer;
 		}
@@ -148,7 +147,7 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 *	@params: none
 *	@return: float angle from source in deg
 */
-static float getAngleFromSource(void) {
+float getAngleFromSource(void) {
 
 	//get frequency of sound (ie frequency with the highest FFT amplitude)
 	float maxLeftOutput = 0;
@@ -187,8 +186,12 @@ static float getAngleFromSource(void) {
 *	@params: angle from noise source (in deg)
 *	@return: none
 */
-static void alignRobot(float angle) {
+//static void alignRobot(float angle) {
 	//need a PD regulator
-	//right_motor_set_speed(speed - ROTATION_COEFF * speed_correction);
-	//left_motor_set_speed(speed + ROTATION_COEFF * speed_correction);
-}
+//	float speed = 5; // cm/s
+//	speed = speed * 1000/13; // convert from cm/s to step/s
+//	float speed_correction = 0.5 * 1000/13;
+//
+//	right_motor_set_speed(speed - ROTATION_COEFF * speed_correction);
+//	left_motor_set_speed(speed + ROTATION_COEFF * speed_correction);
+//}

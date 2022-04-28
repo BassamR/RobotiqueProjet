@@ -26,4 +26,7 @@ void wait_send_to_computer(void);
 //Returns the pointer to the BUFFER_NAME_t buffer asked
 float* get_audio_buffer_ptr(BUFFER_NAME_t name);
 
+//Returns the angle (in deg) from the center of the robot and a noise source
+float getAngleFromSource(void);
+
 #endif /* AUDIO_PROCESSING_H */
