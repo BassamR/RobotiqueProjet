@@ -84,17 +84,17 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 		arm_cmplx_mag_f32(micFront_cmplx_input, micFront_output, FFT_SIZE);
 
 		//send to computer
-		if(sendToComputer == 5) {
-			chBSemSignal(&sendToComputer_sem);
-			sendToComputer = 0;
-
-			//call functions that need audio data
-			float robotAngle = getAngleFromSource();
-			alignRobot(robotAngle);
-			//chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", robotAngle);
-		} else {
-			++sendToComputer;
-		}
+//		if(sendToComputer == 5) {
+//			chBSemSignal(&sendToComputer_sem);
+//			sendToComputer = 0;
+//
+//			//call functions that need audio data
+//			//float robotAngle = getAngleFromSource();
+//			//alignRobot(robotAngle);
+//			//chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", robotAngle);
+//		} else {
+//			++sendToComputer;
+//		}
 
 	}
 }
@@ -148,7 +148,6 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 *	@return: float angle from source in deg
 */
 float getAngleFromSource(void) {
-
 	//get frequency of sound (ie frequency with the highest FFT amplitude)
 	float maxLeftOutput = 0;
 	int maxFreq = 0;
@@ -179,19 +178,3 @@ float getAngleFromSource(void) {
 
 	return angle;
 }
-
-/*
-*	Rotates the robot to align it with noise source
-*
-*	@params: angle from noise source (in deg)
-*	@return: none
-*/
-//static void alignRobot(float angle) {
-	//need a PD regulator
-//	float speed = 5; // cm/s
-//	speed = speed * 1000/13; // convert from cm/s to step/s
-//	float speed_correction = 0.5 * 1000/13;
-//
-//	right_motor_set_speed(speed - ROTATION_COEFF * speed_correction);
-//	left_motor_set_speed(speed + ROTATION_COEFF * speed_correction);
-//}
