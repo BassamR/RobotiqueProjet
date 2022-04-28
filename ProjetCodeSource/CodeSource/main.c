@@ -97,15 +97,16 @@ int main(void){
     	}
     }
 }
+
+
 #define STACK_CHK_GUARD 0xe2dee396
 uintptr_t __stack_chk_guard = STACK_CHK_GUARD;
 
-void __stack_chk_fail(void)
-{
+void __stack_chk_fail(void) {
     chSysHalt("Stack smashing detected");
 }
 
-uint16_t set_ref(void){  //you need to skip a bunch of measurments at startup because theyre not correct
+uint16_t set_ref(void) {  //you need to skip a bunch of measurments at startup because theyre not correct
 	uint16_t ref = 0;
 	for (int i=0; i<=1000;++i){
 		ref= VL53L0X_get_dist_mm();
