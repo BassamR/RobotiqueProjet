@@ -13,6 +13,12 @@
 
 #include <math.h>
 
+/*
+ * Uncomment to return the real angle in [-pi, pi]
+ * Else, will return an angle in [0, pi] but won't detect the side the sound is coming from
+ */
+//#define COMPUTE_SIGNED_ANGLE
+
 #define SOUND_SPEED 			34300 	// cm/s
 #define EPUCK_RADIUS    		2.675f  // cm
 #define AMPLITUDE_THRESHOLD		9000
@@ -214,7 +220,9 @@ float getAngleFromSource(void) {
 		float angle = acosf(cosineArgument) * 180/M_PI;
 
 		//front-back, if negative then sound comes from back, else front
+#ifdef COMPUTE_SIGNED_ANGLE
 		if(maxFrontOutput < maxBackOutput) angle = -angle;
+#endif
 
 		angleSum += angle;
 		++counter;
