@@ -15,7 +15,7 @@
 
 #define SOUND_SPEED 			34300 	// cm/s
 #define EPUCK_RADIUS    		2.675f  // cm
-#define AMPLITUDE_THRESHOLD		100
+#define AMPLITUDE_THRESHOLD		9000
 #define NUMBER_SAMPLES			5		// number of samples for angle average
 
 //semaphore
@@ -34,11 +34,9 @@ static float micBack_output[FFT_SIZE];
 
 // Extra static variables and functions
 static int positionInBuffer = 0;
-//static int sendToComputer = 0;
+static int sendToComputer = 0;
 
 static int counter = 0;
-
-//static void alignRobot(float angle);
 
 /*
 *	Callback called when the demodulation of the four microphones is done.
@@ -152,23 +150,46 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 */
 float getAngleFromSource(void) {
 	float angleSum = 0;
+	static float prevAngle = 0;
+
+	float maxLeftOutput = 0;
+	float maxRightOutput = 0;
+	float maxFrontOutput = 0;
+	float maxBackOutput = 0;
+	int maxFreqLeft = 0;
+	int maxFreqRight = 0;
+	int maxFreq = 0;
+
 	while(counter < NUMBER_SAMPLES) {
 		//get frequency of sound (ie frequency with the highest FFT amplitude)
-		float maxLeftOutput = 0;
-		int maxFreq = 0;
+
 		//run through half the array because FFT gives positive part on [0,512], and negative part on [512, 1024]
 		for(int i = 5; i < FFT_SIZE/2; ++i) {
 			//start from i=5 as to not consider low freq
 			if(micLeft_output[i] > maxLeftOutput) {
 				maxLeftOutput = micLeft_output[i]; //contains the biggest amplitude of the FFT
-				maxFreq = i; //contains the index at which we have the biggest amplitude
+				maxFreqLeft = i; //contains the index at which we have the biggest amplitude
 			}
+
+			if(micRight_output[i] > maxRightOutput) {
+				maxRightOutput = micRight_output[i];
+				maxFreqRight = i;
+			}
+
+			if(micFront_output[i] > maxFrontOutput) maxFrontOutput = micFront_output[i];
+			if(micBack_output[i] > maxBackOutput) maxBackOutput = micBack_output[i];
 		}
 
-		//if(counter == 4) chprintf((BaseSequentialStream *)&SDU1, "%nMaxFreq=%-7d \r\n", maxFreq);
-
 		//if the biggest amplitude is smaller than a certain threshold (ie a clear sound isnt being played), do nothing
-		if(maxLeftOutput < AMPLITUDE_THRESHOLD) return 0;
+		if((maxLeftOutput < AMPLITUDE_THRESHOLD) || (maxRightOutput < AMPLITUDE_THRESHOLD)) {
+			angleSum += prevAngle;
+			++counter;
+			continue; //do not calculate next angle
+		} //this makes the robot memorize current noise angle once noise shuts off
+
+		//choose the frequency coming from the mic closest to the sound source
+		if(maxFreqLeft >= maxFreqRight) maxFreq = maxFreqLeft;
+		else maxFreq = maxFreqRight;
 
 		// Calculate time shift at max amplitude frequency using FFT argument
 		float micLeftArg = atan2f(micLeft_cmplx_input[2*maxFreq + 1], micLeft_cmplx_input[2*maxFreq]);
@@ -177,20 +198,30 @@ float getAngleFromSource(void) {
 		//why do i need to scale by 10^-5 ?
 		//chprintf((BaseSequentialStream *)&SDU1, "%ntimeShift=%.2f \r\n", timeShift);
 
-		//front-back, if negative then sound comes from back, else front
-
 		// Calculate angle in deg
 		//float cosineArgument = SOUND_SPEED * timeShift/(2*EPUCK_RADIUS);
 		float cosineArgument = SOUND_SPEED * timeShift; //why does this work better????
-		if(cosineArgument > 1) cosineArgument = 1;
-		if(cosineArgument < -1) cosineArgument = -1; //safety to avoid taking arccos of undefined values
+		//cap the values of the cosine argument to avoid taking arccos of undefined values
+//		if(cosineArgument > 1) cosineArgument = 1;
+//		if(cosineArgument < -1) cosineArgument = -1;
+		//skip next angle calculation if cosineArgument is too big
+		if((cosineArgument > 1) || (cosineArgument < -1)) {
+			angleSum += prevAngle;
+			++counter;
+			continue; //do not calculate next angle
+		}
+
 		float angle = acosf(cosineArgument) * 180/M_PI;
 
+		//front-back, if negative then sound comes from back, else front
+		if(maxFrontOutput < maxBackOutput) angle = -angle;
+
 		angleSum += angle;
-		counter++;
+		++counter;
 	}
 
 	float finalAngle = angleSum/NUMBER_SAMPLES;
+	prevAngle = finalAngle;
 	counter = 0;
 
 	//chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", angle);
