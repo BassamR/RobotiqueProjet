@@ -10,12 +10,11 @@
 #include <audio_processing.h>
 
 #define ROTATION_COEFF 				0.4
-#define ROTATION_ERROR_THRESHOLD	3 // deg
 #define ROTATION_ERROR_THRESHOLD	3 // degrees
 #define ERROR_THRESHOLD 			0.25 //minimum error we want to detect is 0.2cm
 
 #define TS 0.01		// sampling period in s, either multiply with ts or with the variable time
-#define TF 0	// filter frequency, in the range 2*ts - 10*ts
+#define TF 0.05	// filter frequency, in the range 2*ts - 10*ts
 
 //PID variables for distance regulation
 #define kp 1.2f
