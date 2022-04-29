@@ -11,6 +11,7 @@
 
 #define ROTATION_COEFF 				0.4
 #define ROTATION_ERROR_THRESHOLD	3 // deg
+#define ROTATION_ERROR_THRESHOLD	3 // degrees
 #define ERROR_THRESHOLD 			0.25 //minimum error we want to detect is 0.2cm
 
 #define TS 0.01		// sampling period in s, either multiply with ts or with the variable time
@@ -20,7 +21,7 @@
 #define kp 1.2f
 #define ki 0.0045f
 #define reference 10 // cm
-#define uMax  13
+#define U_MAX  13
 
 static float ui = 0; // initial condition for integrator term
 static float up = 0;
@@ -74,6 +75,10 @@ static THD_FUNCTION(PiRegulator, arg) {
 
             angleSpeed = angleUp + angleUd + angleUi; // loop
             prevAngleError = angleError;
+
+            //avoid command saturation
+            if(angleSpeed > U_MAX) angleSpeed = U_MAX;
+            if(angleSpeed < -U_MAX) angleSpeed = -U_MAX;
         }
 
         //chprintf((BaseSequentialStream *)&SDU1, "%nspeed(cm)=%.2f \r\n", speed);
@@ -120,7 +125,7 @@ static THD_FUNCTION(PiRegulator, arg) {
 //        	speed = 0;
 //        } else {
 //            up = kp*error;
-//            if(!(fabs(up + ui + ki*error) > uMax)) ui = ui + ki*error; // corresponds to current ui + ARW
+//            if(!(fabs(up + ui + ki*error) > U_MAX)) ui = ui + ki*error; // corresponds to current ui + ARW
 //
 //            speed = up + ui; // loop
 //        }
