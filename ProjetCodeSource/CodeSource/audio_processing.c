@@ -149,7 +149,6 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 
 /*
 *	Calculates angle of robot (in deg) relative to a noise source using 2 microphones (left and right)
-*	(might need to use back and front mics, not sure)
 *
 *	@params: none
 *	@return: float angle from source in deg
@@ -160,11 +159,14 @@ float getAngleFromSource(void) {
 
 	float maxLeftOutput = 0;
 	float maxRightOutput = 0;
-	float maxFrontOutput = 0;
-	float maxBackOutput = 0;
 	int maxFreqLeft = 0;
 	int maxFreqRight = 0;
 	int maxFreq = 0;
+
+#ifdef COMPUTE_SIGNED_ANGLE
+	float maxFrontOutput = 0;
+	float maxBackOutput = 0;
+#endif
 
 	while(counter < NUMBER_SAMPLES) {
 		//get frequency of sound (ie frequency with the highest FFT amplitude)
@@ -182,8 +184,10 @@ float getAngleFromSource(void) {
 				maxFreqRight = i;
 			}
 
+#ifdef COMPUTE_SIGNED_ANGLE
 			if(micFront_output[i] > maxFrontOutput) maxFrontOutput = micFront_output[i];
 			if(micBack_output[i] > maxBackOutput) maxBackOutput = micBack_output[i];
+#endif
 		}
 
 		//if the biggest amplitude is smaller than a certain threshold (ie a clear sound isnt being played), do nothing
