@@ -52,7 +52,6 @@ int main(void) {
     spi_comm_start();
     //start the ToF
     VL53L0X_start();
-
     //start the mic thread
     mic_start(&processAudioData);
 
@@ -88,8 +87,6 @@ int main(void) {
 
     	//start the siren thread
     	siren_start();
-        //start the mic thread
-        //mic_start(&processAudioData);
     	//start the pid thread
     	pid_regulator_start(); //careful where you place this, it should be called only once otherwise panics
 
