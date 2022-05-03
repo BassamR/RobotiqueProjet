@@ -20,7 +20,8 @@
 //#define COMPUTE_SIGNED_ANGLE
 
 #define SOUND_SPEED 			34300 	// cm/s
-#define EPUCK_RADIUS    		2.675f  // cm
+//#define EPUCK_RADIUS    		2.675f  // cm
+#define MIC_DISTANCE    		6.0f  // cm
 #define AMPLITUDE_THRESHOLD		9000
 #define NUMBER_SAMPLES			5		// number of samples for angle average
 
@@ -96,9 +97,9 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 //			sendToComputer = 0;
 //
 //			//call functions that need audio data
-//			float robotAngle = getAngleFromSource();
+//			int16_t robotAngle = getAngleFromSource();
 //			//alignRobot(robotAngle);
-//			chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", robotAngle);
+//			chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.7d \r\n", robotAngle);
 //		} else {
 //			++sendToComputer;
 //		}
@@ -153,7 +154,7 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name){
 *	@params: none
 *	@return: float angle from source in deg
 */
-float getAngleFromSource(void) {
+int16_t getAngleFromSource(void) {
 	float angleSum = 0;
 	static float prevAngle = 0;
 
@@ -208,8 +209,10 @@ float getAngleFromSource(void) {
 		//why do i need to scale by 10^-5 ?
 		//chprintf((BaseSequentialStream *)&SDU1, "%ntimeShift=%.2f \r\n", timeShift);
 
+		//float timeShift = FFT_SIZE * (micRightArg - micLeftArg) / (2 * M_PI * maxFreq);
+
 		// Calculate angle in deg
-		//float cosineArgument = SOUND_SPEED * timeShift/(2*EPUCK_RADIUS);
+		//float cosineArgument = SOUND_SPEED * timeShift/MIC_DISTANCE;
 		float cosineArgument = SOUND_SPEED * timeShift; //why does this work better????
 		//cap the values of the cosine argument to avoid taking arccos of undefined values
 //		if(cosineArgument > 1) cosineArgument = 1;
@@ -222,9 +225,10 @@ float getAngleFromSource(void) {
 		}
 
 		float angle = acosf(cosineArgument) * 180/M_PI;
+		//prevAngle = angle;
 
-		//front-back, if negative then sound comes from back, else front
 #ifdef COMPUTE_SIGNED_ANGLE
+		//front-back, if negative then sound comes from back, else front
 		if(maxFrontOutput < maxBackOutput) angle = -angle;
 #endif
 
