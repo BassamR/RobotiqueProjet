@@ -10,19 +10,20 @@
 #include <audio_processing.h>
 
 // General constants
-#define ROTATION_COEFF 				0.4
+//#define ROTATION_COEFF 				0.4
 #define ROTATION_ERROR_THRESHOLD	0 // degrees
-#define ERROR_THRESHOLD 			0.25 //minimum error we want to detect is 0.2cm
+#define DISTANCE_ERROR_THRESHOLD 			0.25 //minimum error we want to detect is 0.2cm
+//#define ERROR_DISTANCE_MAX			40   //if error bigger than 40cm then stop
 
-#define TS 0.015		// sampling period in s, either multiply with ts or with the variable time
-#define TF 0.075		// filter frequency, in the range 2*ts - 10*ts
+#define TS 0.05f		// sampling period in s, either multiply with ts or with the variable time
+#define TF 0		// filter frequency, in the range 2*ts - 10*ts
 
 #define U_MAX  		1000 	// steps/s
-#define U_MAX_CM	13		// cm/s
+#define U_MAX_CM	7		// cm/s
 
 //PID variables for distance regulation
-#define DISTANCE_KP 	1.2f
-#define DISTANCE_KI 	0.0045f
+#define DISTANCE_KP 	0 //1.2f
+#define DISTANCE_KI 	0//0.0045f
 #define DISTANCE_REF 	10 // cm
 
 static int16_t distanceSpeed = 0;
@@ -32,15 +33,15 @@ static float distanceUi = 0; // initial condition for integrator term
 static float distanceUp = 0;
 
 // PID variables for angle regulation
-#define ANGLE_KP 		13.0f
+#define ANGLE_KP 		10.0f
 #define ANGLE_KI 		10.0f
-#define ANGLE_KD 		5.0f
+#define ANGLE_KD 		0
 #define ANGLE_REF 		90 //deg
 #define ANGLE_UMAX 		13
 
 static int16_t angleSpeed = 0; //what the rotational PID corrects
 static int16_t angleError = 0; // = ref - distance, here the declaration = initial error
-static float prevAngleError = 0;
+static int16_t prevAngleError = 0;
 
 static float angleUi = 0;
 static float angleUp = 0;
@@ -63,6 +64,9 @@ static THD_FUNCTION(PiRegulator, arg) {
         // Rotation PID
         //float angle = getAngleFromSource();
         angleError = getAngleFromSource() - ANGLE_REF;
+        if (angleError>0+3) angleError=90;
+        else if (angleError<0-3) angleError=-90;
+        else angleError=0;
 //		if(count == 10) {
 //			chprintf((BaseSequentialStream *)&SDU1, "%nAngleError=%.2f \r\n", angle);
 //			count = 0;
@@ -78,7 +82,7 @@ static THD_FUNCTION(PiRegulator, arg) {
             // Calculate angleUd
             angleUd = (TF*angleUd + ANGLE_KD * (prevAngleError - angleError))/(TF + TS); //instead of ts, use real system time maybe
             // Calculate angleUi with an ARW
-            if(!(fabs(angleUp + angleUi + ANGLE_KI*angleError) > ANGLE_UMAX)) angleUi = angleUi + ANGLE_KI*angleError;
+            if(!(fabs(angleUp + angleUi + ANGLE_KI*angleError) > ANGLE_UMAX)) angleUi = angleUi + ANGLE_KI*angleError; //add ud saturation
 
             angleSpeed = angleUp + angleUd + angleUi; // loop
             //angleSpeed = angleUp + angleUi; // loop
@@ -93,7 +97,7 @@ static THD_FUNCTION(PiRegulator, arg) {
 
         // Distance PID
         distanceError = VL53L0X_get_dist_mm()/10 - DISTANCE_REF;
-		if(fabs(distanceError) < ERROR_THRESHOLD) {
+		if(fabs(distanceError) < DISTANCE_ERROR_THRESHOLD) {
 			distanceSpeed = 0;
 		} else {
 			distanceUp = DISTANCE_KP*distanceError;
@@ -120,8 +124,8 @@ static THD_FUNCTION(PiRegulator, arg) {
 
         //100Hz
 		//chprintf((BaseSequentialStream *)&SD3, "%ntime is %d \r\n",chVTGetSystemTime()-time);
-		//chThdSleepMilliseconds(10);
-		chThdSleepUntilWindowed(time, time + MS2ST(15));
+		chThdSleepMilliseconds(50);
+		//chThdSleepUntilWindowed(time, time + MS2ST(10));
     }
 }
 

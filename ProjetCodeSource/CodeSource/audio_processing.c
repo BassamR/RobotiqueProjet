@@ -26,7 +26,7 @@
 #define MIC_DISTANCE    		6.0f  // cm
 #define AMPLITUDE_THRESHOLD		9000
 #define FREQ_THRESHOLD 			70
-#define NUMBER_SAMPLES			3		// number of samples for angle average
+#define NUMBER_SAMPLES			1		// number of samples for angle average
 
 //semaphore
 static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
@@ -246,6 +246,6 @@ int16_t getAngleFromSource(void) {
 	prevAngle = angle;
 
 	//chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", angle);
-
+	//chprintf((BaseSequentialStream *)&SD3, "time is %d\n",chVTGetSystemTime()-time);
 	return angle;
 }
