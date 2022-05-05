@@ -22,8 +22,8 @@
 #include <PID_regulator.h>
 #include <siren.h>
 
-#define sensitivity 20
-#define max_count 250
+#define SENSITIVITY 	20
+#define MAX_COUNT 		250
 
 static void serial_start(void) {
 	static SerialConfig ser_cfg = {
@@ -33,10 +33,10 @@ static void serial_start(void) {
 	    0,
 	};
 
-	sdStart(&SD3, &ser_cfg); // UART3.
+	sdStart(&SD3, &ser_cfg); // UART3
 }
 
-enum state {Detect,Chase};
+enum state {Detect, Chase};
 
 int main(void) {
 
@@ -58,30 +58,30 @@ int main(void) {
 
     while (true) {
 
-    	enum state current_state=Detect;
+    	enum state current_state = Detect;
     	uint16_t reference = 0;
     	uint16_t dist_to_perp = 0;
     	reference = set_ref(); //make a sensor stabilization loop
     	dist_to_perp = reference; //needs to be initialized non zero
     	uint16_t count = 0;
 
-    	while (current_state==Detect) {
+    	while (current_state == Detect) {
     		uint16_t distance = VL53L0X_get_dist_mm();
     		//chprintf((BaseSequentialStream *)&SDU1, "%u \r\n", distance);
-    		if (distance<=reference-20){
+    		if (distance <= reference - SENSITIVITY) {
     			++count;
     			dist_to_perp=distance;
     			//reference=distance; this should only be used if the object stays for a while infront of the tof to set a new reference
     			chprintf((BaseSequentialStream *)&SD3, "%u \r\n", count);
-    		}else if (distance>=dist_to_perp+20){
-    			if (count<=250) { //case object was fast \\pbl is this will acivate if the reference moves can make it more robust
+    		} else if (distance >= dist_to_perp + SENSITIVITY) {
+    			if (count <= MAX_COUNT) { //case object was fast \\pbl is this will acivate if the reference moves can make it more robust
     				//call function to estimate speed then activate the lights
     				// can activate all the chase threads here too still works, maybe we wont need the chase state stuff after all
-    				current_state=Chase;
+    				current_state = Chase;
     			}
     			//reference=distance;
-    			dist_to_perp=distance;
-    			count=0;
+    			dist_to_perp = distance;
+    			count = 0;
     		}
     	}
 
@@ -90,7 +90,7 @@ int main(void) {
     	//start the pid thread
     	pid_regulator_start(); //careful where you place this, it should be called only once otherwise panics
 
-    	while (current_state==Chase){
+    	while (current_state == Chase){
     		//chprintf((BaseSequentialStream *)&SD3, "%nChase mode is active \r\n");
     	}
     }
@@ -113,6 +113,3 @@ uint16_t set_ref(void) {  //you need to skip a bunch of measurments at startup b
 
 	return ref;
 }
-
-
-
