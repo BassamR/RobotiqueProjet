@@ -1,3 +1,9 @@
+/*
+* @name		audio_processing.c
+* @author 	Bassam El Rawas, Ali Elmorsy (Groupe 15)
+* @date 	Mai 2022
+*/
+
 #include "ch.h"
 #include "hal.h"
 #include <main.h>
@@ -10,9 +16,6 @@
 #include <communications.h>
 #include <fft.h>
 #include <arm_math.h>
-
-#include <motors.h>
-
 #include <math.h>
 
 /*
@@ -172,9 +175,10 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name) {
 
 /*
 *	Calculates angle of robot (in deg) relative to a noise source using 2 microphones (left and right)
+*	Optional: use front and back mics to return a signed angle
 *
 *	@params: none
-*	@return: float angle from source in deg
+*	@return: int16_t angle from source in deg
 */
 int16_t getAngleFromSource(void) {
 	static float prevAngle = 0;

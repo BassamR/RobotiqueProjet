@@ -1,3 +1,9 @@
+/*
+* @name		audio_processing.h
+* @author 	Bassam El Rawas, Ali Elmorsy (Groupe 15)
+* @date 	Mai 2022
+*/
+
 #ifndef AUDIO_PROCESSING_H
 #define AUDIO_PROCESSING_H
 
