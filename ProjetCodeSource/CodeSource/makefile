@@ -15,6 +15,7 @@ CSRC += ./main.c \
 		./fft.c \
 		./PID_regulator.c\
 		./siren.c\
+		./radar.c\
 
 #Header folders to include
 INCDIR += 
