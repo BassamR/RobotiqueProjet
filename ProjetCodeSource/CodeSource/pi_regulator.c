@@ -1,3 +1,10 @@
+/*
+* @name		pi_regulator.c
+* @author 	Bassam El Rawas, Ali Elmorsy (Groupe 15)
+* @date 	Mai 2022
+*/
+
+#include "pi_regulator.h"
 #include "ch.h"
 #include "hal.h"
 #include <math.h>
@@ -101,9 +108,13 @@ static THD_FUNCTION(PiRegulator, arg) {
     }
 }
 
-void pid_regulator_start(void){
-	//inits the motors
-	motors_init();
+/*
+*	Starts the PI thread
+*
+*	@params: none
+*	@return: none
+*/
+void pi_regulator_start(void){
 	chThdCreateStatic(waPiRegulator, sizeof(waPiRegulator), NORMALPRIO+2, PiRegulator, NULL);
 }
 
