@@ -70,7 +70,7 @@ static THD_FUNCTION(PiRegulator, arg) {
 		// Calculate angleUp
 		angleUp = ANGLE_KP*angleError;
 		// Calculate angleUd
-		angleUd = (TF*angleUd + ANGLE_KD * (prevAngleError - angleError))/(TF + TS); //instead of ts, use real system time maybe
+		angleUd = (TF*angleUd + ANGLE_KD * (prevAngleError - angleError))/(TF + TS);
 		// Calculate angleUi with an ARW
 		if(!(fabs(angleUp + angleUi + ANGLE_KI*angleError) > ANGLE_UMAX)) angleUi = angleUi + ANGLE_KI*angleError;
 
