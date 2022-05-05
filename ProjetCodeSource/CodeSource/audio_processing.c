@@ -22,14 +22,10 @@
 //#define COMPUTE_SIGNED_ANGLE
 
 #define SOUND_SPEED 			34300 	// cm/s
-//#define EPUCK_RADIUS    		2.675f  // cm
-#define MIC_DISTANCE    		6.0f  // cm
+#define MIC_DISTANCE    		6.0f  	// cm
 #define AMPLITUDE_THRESHOLD		9000
 #define FREQ_THRESHOLD 			70
-#define NUMBER_SAMPLES			3		// number of samples for angle average
-
-//semaphore
-static BSEMAPHORE_DECL(sendToComputer_sem, TRUE);
+#define FREQ_MIN				5
 
 //2 times FFT_SIZE because these arrays contain complex numbers (real + imaginary)
 static float micLeft_cmplx_input[2 * FFT_SIZE];
@@ -42,7 +38,7 @@ static float micRight_output[FFT_SIZE];
 static float micFront_output[FFT_SIZE];
 static float micBack_output[FFT_SIZE];
 
-// double buffering (maybe)
+// Double Buffering arrays
 static float micLeftInputDB[2 * FFT_SIZE];
 static float micRightInputDB[2 * FFT_SIZE];
 
@@ -99,16 +95,16 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 		arm_cmplx_mag_f32(micBack_cmplx_input, micBack_output, FFT_SIZE);
 		arm_cmplx_mag_f32(micFront_cmplx_input, micFront_output, FFT_SIZE);
 
+		// Fill out doubl buffering arrays
 		for(int i = 0; i < 2*FFT_SIZE; ++i) {
 			micLeftInputDB[i] = micLeft_cmplx_input[i];
-			micRightInputDB[i] = micRight_cmplx_input[i]; //contains a copy of FFT result
+			micRightInputDB[i] = micRight_cmplx_input[i];
 		}
 
 		for(int i = 0; i < FFT_SIZE; ++i) {
 			micLeftOutputDB[i] = micLeft_output[i];
-			micRightOutputDB[i] = micRight_output[i]; //maybe put at the beginning of getAngleFromSource() ?
+			micRightOutputDB[i] = micRight_output[i];
 		}
-
 
 		//send to computer
 //		if(sendToComputer == 5) {
@@ -136,12 +132,6 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 //		}
 
 	}
-}
-
-
-
-void wait_send_to_computer(void) {
-	chBSemWait(&sendToComputer_sem);
 }
 
 /*
@@ -200,10 +190,10 @@ int16_t getAngleFromSource(void) {
 	float maxBackOutput = 0;
 #endif
 
-	//get frequency of sound (ie frequency with the highest FFT amplitude)
+	// Get frequency of sound (ie frequency with the highest FFT amplitude)
 
-	//run through half the array because FFT gives positive part on [0,512], and negative part on [512, 1024]
-	for(int i = 5; i < FFT_SIZE/2; ++i) {
+	// Run through half the array because FFT gives positive part on [0,512], and negative part on [512, 1024]
+	for(int i = FREQ_MIN; i < FFT_SIZE/2; ++i) {
 		//start from i=5 as to not consider low freq
 		if(micLeftOutputDB[i] > maxLeftOutput) {
 			maxLeftOutput = micLeftOutputDB[i]; //contains the biggest amplitude of the FFT
@@ -221,17 +211,17 @@ int16_t getAngleFromSource(void) {
 #endif
 	}
 
-	//if the biggest amplitude is smaller than a certain threshold (ie a clear sound isnt being played), do nothing
+	// If the biggest amplitude is smaller than a certain threshold (ie a clear sound isnt being played), do nothing
 	if((maxLeftOutput < AMPLITUDE_THRESHOLD) || (maxRightOutput < AMPLITUDE_THRESHOLD)) {
-		return prevAngle;
-	} //this makes the robot memorize current noise angle once noise shuts off
+		return prevAngle; //this makes the robot memorize current noise angle once noise shuts off
+	}
 
-	//do not take into account frequencies higher than a threshold
+	// Do not take into account frequencies higher than a threshold
 	if((maxFreqLeft > FREQ_THRESHOLD) || (maxFreqRight > FREQ_THRESHOLD)) {
 		return prevAngle;
 	}
 
-	//choose the frequency coming from the mic closest to the sound source
+	// Choose the frequency coming from the mic closest to the sound source
 	if(maxFreqLeft >= maxFreqRight) maxFreq = maxFreqLeft;
 	else maxFreq = maxFreqRight;
 
@@ -247,10 +237,7 @@ int16_t getAngleFromSource(void) {
 	// Calculate angle in deg
 	//float cosineArgument = SOUND_SPEED * timeShift/MIC_DISTANCE;
 	float cosineArgument = SOUND_SPEED * timeShift; //why does this work better????
-	//cap the values of the cosine argument to avoid taking arccos of undefined values
-//		if(cosineArgument > 1) cosineArgument = 1;
-//		if(cosineArgument < -1) cosineArgument = -1;
-	//skip next angle calculation if cosineArgument is too big
+	//skip next angle calculation if cosineArgument is too big (to avoid undefined arccos)
 	if((cosineArgument > 1) || (cosineArgument < -1)) {
 		return prevAngle;
 	}
