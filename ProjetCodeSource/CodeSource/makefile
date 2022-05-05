@@ -13,7 +13,7 @@ CSRC += ./main.c \
 		./audio_processing.c \
 		./communications.c \
 		./fft.c \
-		./PID_regulator.c\
+		./pi_regulator.c\
 		./siren.c\
 
 #Header folders to include
