@@ -7,11 +7,9 @@
 #include "pi_regulator.h"
 #include "ch.h"
 #include "hal.h"
-#include <math.h>
 #include <usbcfg.h>
 #include <chprintf.h>
 
-#include <main.h>		//is it normal to include main here ?? we did that in the tp
 #include <sensors/VL53L0X/VL53L0X.h>
 #include <motors.h>
 #include <audio_processing.h>
@@ -27,7 +25,7 @@
 
 #define DISTANCE_SPEED_MAX 			9 		// cm/s
 
-//PID variables for distance regulation
+// PID variables for distance regulation
 #define DISTANCE_KP 				1.6f
 #define DISTANCE_KI 				0.0045f
 #define DISTANCE_REF 				10 		// cm
