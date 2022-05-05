@@ -1,3 +1,9 @@
+/*
+* @name		main.c
+* @author 	Bassam El Rawas, Ali Elmorsy (Groupe 15)
+* @date 	Mai 2022
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
@@ -12,14 +18,13 @@
 #include <audio/microphone.h>
 
 #include <audio_processing.h>
-#include <fft.h>
+#include <pi_regulator.h>
 #include <communications.h>
 #include <arm_math.h>
 
 
 #include <sensors/VL53L0X/VL53L0X.h>
 #include <audio/audio_thread.h>
-#include <PID_regulator.h>
 #include <siren.h>
 
 #define SENSITIVITY 	20
@@ -54,7 +59,8 @@ int main(void) {
     VL53L0X_start();
     //start the mic thread
     mic_start(&processAudioData);
-
+	//start the motor thread
+	motors_init();
 
     while (true) {
 
@@ -88,7 +94,7 @@ int main(void) {
     	//start the siren thread
     	siren_start();
     	//start the pid thread
-    	pid_regulator_start(); //careful where you place this, it should be called only once otherwise panics
+    	pi_regulator_start(); //careful where you place this, it should be called only once otherwise panics
 
     	while (current_state == Chase){
     		//chprintf((BaseSequentialStream *)&SD3, "%nChase mode is active \r\n");
