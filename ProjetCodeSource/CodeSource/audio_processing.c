@@ -47,7 +47,7 @@ static float micRightOutputDB[FFT_SIZE];
 
 // Extra static variables and functions
 static int positionInBuffer = 0;
-static int sendToComputer = 0;
+//static int sendToComputer = 0;
 
 /*
 *	Callback called when the demodulation of the four microphones is done.
@@ -228,15 +228,15 @@ int16_t getAngleFromSource(void) {
 	// Calculate time shift at max amplitude frequency using FFT argument
 	float micLeftArg = atan2f(micLeftInputDB[2*maxFreq + 1], micLeftInputDB[2*maxFreq]);
 	float micRightArg = atan2f(micRightInputDB[2*maxFreq + 1], micRightInputDB[2*maxFreq]);
-	float timeShift = 0.00001 * FFT_SIZE * (micRightArg - micLeftArg) / (2 * M_PI * maxFreq); //time difference of arrival;
+	float timeShift =  (micRightArg - micLeftArg) / (2 * M_PI * maxFreq*15.625); //time difference of arrival;
 	//why do i need to scale by 10^-5 ?
-	//chprintf((BaseSequentialStream *)&SDU1, "%ntimeShift=%.2f \r\n", timeShift);
+	//chprintf((BaseSequentialStream *)&SD3, "%ntimeShift=%f \r\n", timeShift);
 
 	//float timeShift = FFT_SIZE * (micRightArg - micLeftArg) / (2 * M_PI * maxFreq);
 
 	// Calculate angle in deg
 	//float cosineArgument = SOUND_SPEED * timeShift/MIC_DISTANCE;
-	float cosineArgument = SOUND_SPEED * timeShift; //why does this work better????
+	float cosineArgument = SOUND_SPEED * timeShift/MIC_DISTANCE; //why does this work better????
 	//skip next angle calculation if cosineArgument is too big (to avoid undefined arccos)
 	if((cosineArgument > 1) || (cosineArgument < -1)) {
 		return prevAngle;
@@ -251,7 +251,7 @@ int16_t getAngleFromSource(void) {
 
 	prevAngle = angle;
 
-	//chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.2f \r\n", angle);
+chprintf((BaseSequentialStream *)&SD3, "%nAngle=%.2f \r\n", angle);
 
 	return angle;
 }
