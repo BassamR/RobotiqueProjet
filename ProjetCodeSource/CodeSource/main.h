@@ -5,7 +5,7 @@
 extern "C" {
 #endif
 
-#include "camera/dcmi_camera.h"
+#include "camera/dcmi_camera.h"  // why do we need this
 #include "msgbus/messagebus.h"
 #include "parameter/parameter.h"
 

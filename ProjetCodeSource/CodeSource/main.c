@@ -23,12 +23,11 @@
 #include <arm_math.h>
 
 
-#include <sensors/VL53L0X/VL53L0X.h>
-#include <audio/audio_thread.h>
+#include <spi_comm.h>
 #include <siren.h>
-
-#define SENSITIVITY 	20
-#define MAX_COUNT 		250
+#include <PID_regulator.h>
+#include <audio/audio_thread.h>
+#include <radar.h>
 
 static void serial_start(void) {
 	static SerialConfig ser_cfg = {
@@ -41,7 +40,6 @@ static void serial_start(void) {
 	sdStart(&SD3, &ser_cfg); // UART3
 }
 
-enum state {Detect, Chase};
 
 int main(void) {
 
@@ -55,49 +53,26 @@ int main(void) {
     usb_start();
     //starts spi communication (for RGB leds)
     spi_comm_start();
-    //start the ToF
+    //start the ToF Thread
     VL53L0X_start();
     //start the mic thread
     mic_start(&processAudioData);
 	//start the motor thread
 	motors_init();
+    //start the radar (not a thread)
+    radar_start();
 
     while (true) {
-
-    	enum state current_state = Detect;
-    	uint16_t reference = 0;
-    	uint16_t dist_to_perp = 0;
-    	reference = set_ref(); //make a sensor stabilization loop
-    	dist_to_perp = reference; //needs to be initialized non zero
-    	uint16_t count = 0;
-
-    	while (current_state == Detect) {
-    		uint16_t distance = VL53L0X_get_dist_mm();
-    		//chprintf((BaseSequentialStream *)&SDU1, "%u \r\n", distance);
-    		if (distance <= reference - SENSITIVITY) {
-    			++count;
-    			dist_to_perp=distance;
-    			//reference=distance; this should only be used if the object stays for a while infront of the tof to set a new reference
-    			chprintf((BaseSequentialStream *)&SD3, "%u \r\n", count);
-    		} else if (distance >= dist_to_perp + SENSITIVITY) {
-    			if (count <= MAX_COUNT) { //case object was fast \\pbl is this will acivate if the reference moves can make it more robust
-    				//call function to estimate speed then activate the lights
-    				// can activate all the chase threads here too still works, maybe we wont need the chase state stuff after all
-    				current_state = Chase;
-    			}
-    			//reference=distance;
-    			dist_to_perp = distance;
-    			count = 0;
-    		}
+    	while (get_radar_state() == Detect) {
+    		radar_measure_speed();
     	}
-
     	//start the siren thread
     	siren_start();
     	//start the pid thread
     	pi_regulator_start(); //careful where you place this, it should be called only once otherwise panics
 
-    	while (current_state == Chase){
-    		//chprintf((BaseSequentialStream *)&SD3, "%nChase mode is active \r\n");
+    	while (get_radar_state() == Chase){
+    		//chprintf((BaseSequentialStream *)&SD3, "%nChase mode is active \r\n"); do stuff
     	}
     }
 }
@@ -110,12 +85,3 @@ void __stack_chk_fail(void) {
     chSysHalt("Stack smashing detected");
 }
 
-uint16_t set_ref(void) {  //you need to skip a bunch of measurments at startup because theyre not correct
-	uint16_t ref = 0;
-	for (int i=0; i<=1000;++i){
-		ref= VL53L0X_get_dist_mm();
-		chprintf((BaseSequentialStream *)&SD3, "%u \r\n", ref); //need to uncomment this line for ref to keep that final value for some weird reason
-	} //run 10buffer cycles
-
-	return ref;
-}
