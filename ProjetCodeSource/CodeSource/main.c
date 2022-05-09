@@ -20,13 +20,10 @@
 #include <audio_processing.h>
 #include <pi_regulator.h>
 #include <communications.h>
-#include <arm_math.h>
-
 
 #include <spi_comm.h>
 #include <siren.h>
 #include <pi_regulator.h>
-#include <audio/audio_thread.h>
 #include <radar.h>
 
 static void serial_start(void) {
@@ -42,7 +39,7 @@ static void serial_start(void) {
 
 
 int main(void) {
-
+	//initialize main systems
     halInit();
     chSysInit();
     mpu_init();
@@ -59,6 +56,8 @@ int main(void) {
     mic_start(&processAudioData);
 	//start the motor thread
 	motors_init();
+	//start the speakers
+	dac_start();
     //start the radar (not a thread)
     radar_start();
 
@@ -71,7 +70,7 @@ int main(void) {
     	//start the pid thread
     	pi_regulator_start(); //careful where you place this, it should be called only once otherwise panics
 
-    	while (get_radar_state() == Chase){
+    	while (get_radar_state() == Chase) {
     		//chprintf((BaseSequentialStream *)&SD3, "%nChase mode is active \r\n"); do stuff
     	}
     }

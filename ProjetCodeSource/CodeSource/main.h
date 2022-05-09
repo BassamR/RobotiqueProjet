@@ -1,3 +1,9 @@
+/*
+* @name		main.h
+* @author 	Bassam El Rawas, Ali Elmorsy (Groupe 15)
+* @date 	Mai 2022
+*/
+
 #ifndef MAIN_H
 #define MAIN_H
 
@@ -5,7 +11,7 @@
 extern "C" {
 #endif
 
-#include "camera/dcmi_camera.h"  // why do we need this
+//#include "camera/dcmi_camera.h"  // why do we need this
 #include "msgbus/messagebus.h"
 #include "parameter/parameter.h"
 

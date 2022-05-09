@@ -52,7 +52,7 @@ static float angleUi = 0;
 static float angleUp = 0;
 static float angleUd = 0;
 
-// Thread declaration
+// PI thread declaration
 static THD_WORKING_AREA(waPiRegulator, 256);
 static THD_FUNCTION(PiRegulator, arg) {
     chRegSetThreadName(__FUNCTION__);

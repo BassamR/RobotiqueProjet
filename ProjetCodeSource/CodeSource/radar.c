@@ -1,45 +1,39 @@
+/*
+* @name		radar.c
+* @author 	Bassam El Rawas, Ali Elmorsy (Groupe 15)
+* @date 	Mai 2022
+*/
+
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
 
 #include "ch.h"
 #include "hal.h"
-//#include "memory_protection.h"
-//#include <usbcfg.h>
-//#include <main.h>
-//#include "msgbus/messagebus.h"
-//#include "parameter/parameter.h"
 #include <chprintf.h>
-//#include <motors.h>
-//#include <audio/microphone.h>
-
-//#include <audio_processing.h>
-//#include <fft.h>
-//#include <communications.h>
-//#include <arm_math.h>
-
-
-//#include <spi_comm.h>
-//#include <siren.h>
-//#include <PID_regulator.h>
-//#include <audio/audio_thread.h>
 #include <radar.h>
 
-
+// General constants
+#define INIT_TIME		10000000
 #define SENSITIVITY 	20
 #define MAX_COUNT 		250
 
-
-
-static enum state current_state=0;
+// Static variables
+static enum State current_state = Detect;
 static uint16_t count = 0;
-static uint16_t reference =0;
-static uint16_t dist_to_perp=0;
+static uint16_t reference = 0;
+static uint16_t dist_to_perp = 0;
 
+/*
+*	aly will type it
+*
+*	@params: none
+*	@return: none
+*/
 static void set_reference(void) {  //you need to skip a bunch of measurments at startup because theyre not correct
 	reference = 0;
-	for (unsigned long int i=0; i<=10000000;++i){ //distance is only refreshed every 100ms if we add the print the correct values can be obtained after a bit under 10 cycles, without the print need to wait for at least 10000000
-		reference= VL53L0X_get_dist_mm();
+	for (uint32_t i = 0; i <= INIT_TIME; ++i) { //distance is only refreshed every 100ms if we add the print the correct values can be obtained after a bit under 10 cycles, without the print need to wait for at least 10000000
+		reference = VL53L0X_get_dist_mm();
 		//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", reference); //this needs to be kept here otherwise the tof has no time to get new measurments since it takes 100 ms
 	} //run 10buffer cycles
 	//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", reference);
@@ -47,18 +41,36 @@ static void set_reference(void) {  //you need to skip a bunch of measurments at 
 	return;
 }
 
-enum state get_radar_state(void){
-	return current_state;
-}
-
-void radar_start(void){
+/*
+*	Initializes radar with distance reference and init state
+*
+*	@params: none
+*	@return: none
+*/
+void radar_start(void) {
 	current_state = Detect;
-    set_reference(); //make a sensor stabilization loop
-	dist_to_perp = reference; //needs to be initialized non zero
+    set_reference();
+	dist_to_perp = reference;
 	count = 0;
 }
 
-void radar_measure_speed(void){
+/*
+*	Getter for current state (Chase or Detect) of the robot
+*
+*	@params: none
+*	@return: enum State current state
+*/
+enum State get_radar_state(void) {
+	return current_state;
+}
+
+/*
+*	Changes state (Detect -> Chase) when ToF detects a sufficiently fast object
+*
+*	@params: none
+*	@return: none
+*/
+void radar_measure_speed(void) {
 	uint16_t distance = VL53L0X_get_dist_mm();
 	if (distance <= reference - SENSITIVITY) {
 		++count;
@@ -76,8 +88,3 @@ void radar_measure_speed(void){
 		count = 0;
 	}
 }
-
-
-
-
-
