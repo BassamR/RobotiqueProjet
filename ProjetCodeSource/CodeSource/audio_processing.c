@@ -248,8 +248,8 @@ int16_t getAngleFromSource(void) {
 	float angle = acosf(cosineArgument) * 180/M_PI;
 
 #ifdef COMPUTE_SIGNED_ANGLE
-		//front-back, if negative then sound comes from back, else front
-		if(maxFrontOutput < maxBackOutput) angle = -angle;
+	//front-back, if negative then sound comes from back, else front
+	if(maxFrontOutput < maxBackOutput) angle = -angle;
 #endif
 
 	prevAngle = angle;

@@ -9,6 +9,7 @@
 #include "hal.h"
 #include <usbcfg.h>
 #include <chprintf.h>
+#include <math.h>
 
 #include <sensors/VL53L0X/VL53L0X.h>
 #include <motors.h>
@@ -23,10 +24,10 @@
 #define U_MAX  						1000 	// steps/s
 #define U_MAX_CM					13		// cm/s
 
-#define DISTANCE_SPEED_MAX 			9 		// cm/s
+#define DISTANCE_SPEED_MAX 			8 		// cm/s
 
 // PID variables for distance regulation
-#define DISTANCE_KP 				1.6f
+#define DISTANCE_KP 				1.65f
 #define DISTANCE_KI 				0.0045f
 #define DISTANCE_REF 				10 		// cm
 
