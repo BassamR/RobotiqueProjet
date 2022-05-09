@@ -25,7 +25,7 @@
 
 #include <spi_comm.h>
 #include <siren.h>
-#include <PID_regulator.h>
+#include <pi_regulator.h>
 #include <audio/audio_thread.h>
 #include <radar.h>
 
