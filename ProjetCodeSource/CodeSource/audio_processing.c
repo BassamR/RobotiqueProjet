@@ -49,13 +49,27 @@ static float micRightInputDB[2 * FFT_SIZE];
 static float micLeftOutputDB[FFT_SIZE];
 static float micRightOutputDB[FFT_SIZE];
 
+#ifdef COMPUTE_SIGNED_ANGLE
+static float micFrontInputDB[2 * FFT_SIZE];
+static float micBackInputDB[2 * FFT_SIZE];
+
+static float micFrontOutputDB[FFT_SIZE];
+static float micBackOutputDB[FFT_SIZE];
+#endif
+
 // Extra static variables and functions
 static int positionInBuffer = 0;
-//static int sendToComputer = 0;
+
+//#define SEND_TO_COMPUTER
+
+#ifdef SEND_TO_COMPUTER
+static int sendToComputer = 0;
+#endif
 
 /*
 *	Callback called when the demodulation of the four microphones is done.
-*	We get 160 samples per mic every 10ms (16kHz)
+*	We get 160 samples per mic every 10ms (16kHz).
+*	Fills the samples buffers to reach 1024 samples, then computes their FFTs
 *
 *	@params:
 *	int16_t *data			Buffer containing 4 times 160 samples. the samples are sorted by micro
@@ -65,8 +79,7 @@ static int positionInBuffer = 0;
 *	@return: none
 */
 void processAudioData(int16_t *data, uint16_t num_samples) {
-	//Fill the samples buffers to reach 1024 samples, then compute FFTs
-
+	// Fill input arrays with mic samples
 	for(int i = 0; i < (int)num_samples/4; ++i) {
 		micRight_cmplx_input[positionInBuffer] = data[4*i];
 		micLeft_cmplx_input[positionInBuffer] = data[4*i + 1];
@@ -79,7 +92,6 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 		micFront_cmplx_input[positionInBuffer + 1] = 0;
 
 		positionInBuffer += 2;
-
 		if(positionInBuffer >= 2*FFT_SIZE) break; //finished filling up the 2*1024 buffer
 	}
 
@@ -87,19 +99,13 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 		//reset positionInBuffer
 		positionInBuffer = 0;
 
-		//compute FFT
+		//compute FFT of left and right mic then compute its magnitude
 		doFFT_optimized(FFT_SIZE, micRight_cmplx_input);
 		doFFT_optimized(FFT_SIZE, micLeft_cmplx_input);
-		doFFT_optimized(FFT_SIZE, micBack_cmplx_input);
-		doFFT_optimized(FFT_SIZE, micFront_cmplx_input);
-
-		//compute magnitude of FFT
 		arm_cmplx_mag_f32(micRight_cmplx_input, micRight_output, FFT_SIZE);
 		arm_cmplx_mag_f32(micLeft_cmplx_input, micLeft_output, FFT_SIZE);
-		arm_cmplx_mag_f32(micBack_cmplx_input, micBack_output, FFT_SIZE);
-		arm_cmplx_mag_f32(micFront_cmplx_input, micFront_output, FFT_SIZE);
 
-		// Fill out doubl buffering arrays
+		// Fill out double buffering arrays
 		for(int i = 0; i < 2*FFT_SIZE; ++i) {
 			micLeftInputDB[i] = micLeft_cmplx_input[i];
 			micRightInputDB[i] = micRight_cmplx_input[i];
@@ -110,30 +116,49 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 			micRightOutputDB[i] = micRight_output[i];
 		}
 
+#ifdef COMPUTE_SIGNED_ANGLE // No need to waste resources on back and front mics when unnecessary
+		doFFT_optimized(FFT_SIZE, micBack_cmplx_input);
+		doFFT_optimized(FFT_SIZE, micFront_cmplx_input);
+		arm_cmplx_mag_f32(micBack_cmplx_input, micBack_output, FFT_SIZE);
+		arm_cmplx_mag_f32(micFront_cmplx_input, micFront_output, FFT_SIZE);
+
+		for(int i = 0; i < 2*FFT_SIZE; ++i) {
+			micFrontInputDB[i] = micFront_cmplx_input[i];
+			micBackInputDB[i] = micBack_cmplx_input[i];
+		}
+
+		for(int i = 0; i < FFT_SIZE; ++i) {
+			micFrontOutputDB[i] = micFront_output[i];
+			micBackOutputDB[i] = micBack_output[i];
+		}
+#endif
+
 		//send to computer
-//		if(sendToComputer == 5) {
-//			chBSemSignal(&sendToComputer_sem);
-//			sendToComputer = 0;
+#ifdef SEND_TO_COMPUTER
+		if(sendToComputer == 5) {
+			//chBSemSignal(&sendToComputer_sem);
+			sendToComputer = 0;
+
+			//call functions that need audio data
+			int16_t robotAngle = getAngleFromSource();
+			chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.7d \r\n", robotAngle);
+
+//			int maxFreqLeft = 0;
+//			float maxLeftOutput = 0;
+//			for(int i = 5; i < FFT_SIZE/2; ++i) {
+//				//start from i=5 as to not consider low freq
+//				if(micLeft_output[i] > maxLeftOutput) {
+//					maxLeftOutput = micLeft_output[i]; //contains the biggest amplitude of the FFT
+//					maxFreqLeft = i; //contains the index at which we have the biggest amplitude
+//				}
+//			}
 //
-//			//call functions that need audio data
-//			int16_t robotAngle = getAngleFromSource();
-//			chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.7d \r\n", robotAngle);
-//
-////			int maxFreqLeft = 0;
-////			float maxLeftOutput = 0;
-////			for(int i = 5; i < FFT_SIZE/2; ++i) {
-////				//start from i=5 as to not consider low freq
-////				if(micLeft_output[i] > maxLeftOutput) {
-////					maxLeftOutput = micLeft_output[i]; //contains the biggest amplitude of the FFT
-////					maxFreqLeft = i; //contains the index at which we have the biggest amplitude
-////				}
-////			}
-////
-////			chprintf((BaseSequentialStream *)&SDU1, "%nFreqIndex=%.7d \r\n", maxFreqLeft);
-//
-//		} else {
-//			++sendToComputer;
-//		}
+//			chprintf((BaseSequentialStream *)&SDU1, "%nFreqIndex=%.7d \r\n", maxFreqLeft);
+
+		} else {
+			++sendToComputer;
+		}
+#endif
 
 	}
 }
@@ -199,7 +224,6 @@ int16_t getAngleFromSource(void) {
 
 	// Run through half the array because FFT gives positive part on [0,512], and negative part on [512, 1024]
 	for(int i = FREQ_MIN; i < FFT_SIZE/2; ++i) {
-		//start from i=5 as to not consider low freq
 		if(micLeftOutputDB[i] > maxLeftOutput) {
 			maxLeftOutput = micLeftOutputDB[i]; //contains the biggest amplitude of the FFT
 			maxFreqLeft = i; //contains the index at which we have the biggest amplitude
@@ -211,8 +235,8 @@ int16_t getAngleFromSource(void) {
 		}
 
 #ifdef COMPUTE_SIGNED_ANGLE
-		if(micFront_output[i] > maxFrontOutput) maxFrontOutput = micFront_output[i];
-		if(micBack_output[i] > maxBackOutput) maxBackOutput = micBack_output[i];
+		if(micFrontOutputDB[i] > maxFrontOutput) maxFrontOutput = micFrontOutputDB[i];
+		if(micBackOutputDB[i] > maxBackOutput) maxBackOutput = micBackOutputDB[i];
 #endif
 	}
 
@@ -233,10 +257,8 @@ int16_t getAngleFromSource(void) {
 	// Calculate time shift at max amplitude frequency using FFT argument
 	float micLeftArg = atan2f(micLeftInputDB[2*maxFreq + 1], micLeftInputDB[2*maxFreq]);
 	float micRightArg = atan2f(micRightInputDB[2*maxFreq + 1], micRightInputDB[2*maxFreq]);
-	float timeShift =  (micRightArg - micLeftArg) / (2 * M_PI * maxFreq * FREQ_RESOLUTION); //time difference of arrival;
+	float timeShift = (micRightArg - micLeftArg) / (2 * M_PI * maxFreq * FREQ_RESOLUTION); //time difference of arrival;
 	//chprintf((BaseSequentialStream *)&SD3, "%ntimeShift=%f \r\n", timeShift);
-
-	//float timeShift = FFT_SIZE * (micRightArg - micLeftArg) / (2 * M_PI * maxFreq);
 
 	// Calculate angle in deg
 	float cosineArgument = SOUND_SPEED * timeShift/MIC_DISTANCE;
