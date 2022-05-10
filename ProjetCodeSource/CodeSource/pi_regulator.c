@@ -55,7 +55,7 @@ static float angleUd = 0;
 // PI thread declaration
 static THD_WORKING_AREA(waPiRegulator, 256);
 static THD_FUNCTION(PiRegulator, arg) {
-    chRegSetThreadName(__FUNCTION__);
+    chRegSetThreadName("pi thread");
     (void)arg;
 
     systime_t time;

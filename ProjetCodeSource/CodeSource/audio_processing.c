@@ -58,7 +58,7 @@ static float micBackOutputDB[FFT_SIZE];
 #endif
 
 // Extra static variables and functions
-static int positionInBuffer = 0;
+static int16_t positionInBuffer = 0;
 static bool micEnable = false;
 
 //#define SEND_TO_COMPUTER
@@ -83,7 +83,7 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 	if(!micEnable) return;
 
 	// Fill input arrays with mic samples
-	for(int i = 0; i < (int)num_samples/4; ++i) {
+	for(int16_t i = 0; i < (int16_t)num_samples/4; ++i) {
 		micRight_cmplx_input[positionInBuffer] = data[4*i];
 		micLeft_cmplx_input[positionInBuffer] = data[4*i + 1];
 		micBack_cmplx_input[positionInBuffer] = data[4*i + 2];
@@ -225,9 +225,9 @@ int16_t getAngleFromSource(void) {
 
 	float maxLeftOutput = 0;
 	float maxRightOutput = 0;
-	int maxFreqLeft = 0;
-	int maxFreqRight = 0;
-	int maxFreq = 0;
+	int16_t maxFreqLeft = 0;
+	int16_t maxFreqRight = 0;
+	int16_t maxFreq = 0;
 
 #ifdef COMPUTE_SIGNED_ANGLE
 	float maxFrontOutput = 0;
@@ -237,7 +237,7 @@ int16_t getAngleFromSource(void) {
 	// Get frequency of sound (ie frequency with the highest FFT amplitude)
 
 	// Run through half the array because FFT gives positive part on [0,512], and negative part on [512, 1024]
-	for(int i = FREQ_MIN; i < FFT_SIZE/2; ++i) {
+	for(int16_t i = FREQ_MIN; i < FFT_SIZE/2; ++i) {
 		if(micLeftOutputDB[i] > maxLeftOutput) {
 			maxLeftOutput = micLeftOutputDB[i]; //contains the biggest amplitude of the FFT
 			maxFreqLeft = i; //contains the index at which we have the biggest amplitude
