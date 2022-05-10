@@ -24,7 +24,7 @@
 #define U_MAX  						1000 	// steps/s
 #define U_MAX_CM					13		// cm/s
 
-#define DISTANCE_SPEED_MAX 			8 		// cm/s
+#define DISTANCE_SPEED_MAX 			9 		// cm/s
 
 // PID variables for distance regulation
 #define DISTANCE_KP 				1.65f
