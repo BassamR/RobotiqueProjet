@@ -59,6 +59,7 @@ static float micBackOutputDB[FFT_SIZE];
 
 // Extra static variables and functions
 static int positionInBuffer = 0;
+static bool micEnable = false;
 
 //#define SEND_TO_COMPUTER
 
@@ -79,6 +80,8 @@ static int sendToComputer = 0;
 *	@return: none
 */
 void processAudioData(int16_t *data, uint16_t num_samples) {
+	if(!micEnable) return;
+
 	// Fill input arrays with mic samples
 	for(int i = 0; i < (int)num_samples/4; ++i) {
 		micRight_cmplx_input[positionInBuffer] = data[4*i];
@@ -161,6 +164,17 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 #endif
 
 	}
+}
+
+/*
+*	Enables microphone processing calculations (FFT, buffer filling)
+*
+*	@params: none
+*	@return: none
+*/
+void enableMicrophone(void) {
+	micEnable = true;
+	return;
 }
 
 /*

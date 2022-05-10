@@ -32,4 +32,6 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name);
 //Returns the angle (in deg) from the center of the robot and a noise source
 int16_t getAngleFromSource(void);
 
+void enableMicrophone(void);
+
 #endif /* AUDIO_PROCESSING_H */

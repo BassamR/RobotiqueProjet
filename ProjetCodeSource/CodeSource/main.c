@@ -65,10 +65,13 @@ int main(void) {
     	while (get_radar_state() == Detect) {
     		radar_measure_speed();
     	}
+
+    	enableMicrophone();
+
+    	//start the pid thread
+    	pi_regulator_start();
     	//start the siren thread
     	siren_start();
-    	//start the pid thread
-    	pi_regulator_start(); //careful where you place this, it should be called only once otherwise panics
 
     	while (get_radar_state() == Chase) {
     		//chprintf((BaseSequentialStream *)&SD3, "%nChase mode is active \r\n"); do stuff

@@ -53,6 +53,4 @@ static THD_FUNCTION(SirenThd, arg) {
 */
 void siren_start(void) {
 	chThdCreateStatic(waSirenThd, sizeof(waSirenThd), NORMALPRIO, SirenThd, NULL);
-
 }
-
