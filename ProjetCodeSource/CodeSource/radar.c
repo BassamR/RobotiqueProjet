@@ -16,7 +16,7 @@
 // General constants
 #define INIT_TIME		10000000
 #define SENSITIVITY 	20
-#define MAX_COUNT 		250
+#define MAX_COUNT 		250000
 
 // Static variables
 static enum State current_state = Detect;
@@ -74,13 +74,12 @@ void radar_measure_speed(void) {
 	uint16_t distance = VL53L0X_get_dist_mm();
 	if (distance <= reference - SENSITIVITY) {
 		++count;
-		dist_to_perp=distance;
+		dist_to_perp = distance;
 		//reference=distance; this should only be used if the object stays for a while infront of the tof to set a new reference
 		//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", count);
 	} else if (distance >= dist_to_perp + SENSITIVITY) {
-		if (count <= MAX_COUNT) { //case object was fast \\pbl is this will acivate if the reference moves can make it more robust
+		if (count <= MAX_COUNT) { //case object was fast
 			//call function to estimate speed then activate the lights
-			// can activate all the chase threads here too still works, maybe we wont need the chase state stuff after all
 			current_state = Chase;
 		}
 		//reference=distance;
