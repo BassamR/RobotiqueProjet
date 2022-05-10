@@ -91,7 +91,7 @@ void radar_measure_speed(void) {
 #ifdef MAX_SPEED
 	else if (distance >= dist_to_perp + SENSITIVITY) {
 		float speed=OBJECT_LENGTH/(count/SECOND_COUNT); //en cm/s
-		if (speed <= MAX_SPEED) { //case object was fast \\pbl is this will acivate if the reference moves can make it more robust
+		if (speed >= MAX_SPEED) { //case object was fast \\pbl is this will acivate if the reference moves can make it more robust
 			//call function to estimate speed then activate the lights
 			// can activate all the chase threads here too still works, maybe we wont need the chase state stuff after all
 			current_state = Chase;
