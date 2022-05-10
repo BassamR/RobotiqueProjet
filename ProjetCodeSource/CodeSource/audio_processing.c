@@ -26,9 +26,10 @@
 // General Constants
 #define SOUND_SPEED 			34300 	// cm/s
 #define MIC_DISTANCE    		6.0f  	// cm
-#define AMPLITUDE_THRESHOLD		9000
+#define AMPLITUDE_THRESHOLD		13000
 #define FREQ_THRESHOLD 			70
 #define FREQ_MIN				5
+#define FREQ_MAX				40
 #define FREQ_RESOLUTION			15.625f
 
 // 2 times FFT_SIZE because these arrays contain complex numbers (real + imaginary)
@@ -144,7 +145,8 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 
 			//call functions that need audio data
 			int16_t robotAngle = getAngleFromSource();
-			chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.7d \r\n", robotAngle);
+			//chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.7d \r\n", robotAngle);
+			chprintf((BaseSequentialStream *)&SDU1, "%nMaxFreqAmplitude=%f \r\n", maxAmplitudeTest);
 
 //			int maxFreqLeft = 0;
 //			float maxLeftOutput = 0;
@@ -221,7 +223,7 @@ float* get_audio_buffer_ptr(BUFFER_NAME_t name) {
 *	@return: int16_t angle from source in deg
 */
 int16_t getAngleFromSource(void) {
-	static float prevAngle = 0;
+	static float prevAngle = 90;
 
 	float maxLeftOutput = 0;
 	float maxRightOutput = 0;
@@ -237,7 +239,7 @@ int16_t getAngleFromSource(void) {
 	// Get frequency of sound (ie frequency with the highest FFT amplitude)
 
 	// Run through half the array because FFT gives positive part on [0,512], and negative part on [512, 1024]
-	for(int16_t i = FREQ_MIN; i < FFT_SIZE/2; ++i) {
+	for(int16_t i = FREQ_MIN; i < FREQ_MAX; ++i) {
 		if(micLeftOutputDB[i] > maxLeftOutput) {
 			maxLeftOutput = micLeftOutputDB[i]; //contains the biggest amplitude of the FFT
 			maxFreqLeft = i; //contains the index at which we have the biggest amplitude
@@ -257,11 +259,6 @@ int16_t getAngleFromSource(void) {
 	// If the biggest amplitude is smaller than a certain threshold (ie a clear sound isnt being played), do nothing
 	if((maxLeftOutput < AMPLITUDE_THRESHOLD) || (maxRightOutput < AMPLITUDE_THRESHOLD)) {
 		return prevAngle; //this makes the robot memorize current noise angle once noise shuts off
-	}
-
-	// Do not take into account frequencies higher than a threshold
-	if((maxFreqLeft > FREQ_THRESHOLD) || (maxFreqRight > FREQ_THRESHOLD)) {
-		return prevAngle;
 	}
 
 	// Choose the frequency coming from the mic closest to the sound source
