@@ -13,6 +13,8 @@
 #include <chprintf.h>
 #include <radar.h>
 
+#include <leds.h> ////////////////////////////////////added for time measuring tests
+
 // General constants
 #define INIT_COUNTS		10000000
 #define MAX_COUNT 		2614380 //2 second count
@@ -20,26 +22,29 @@
 #define MAX_COUNT 		2614380 //
 #define SECOND_COUNT	1307190 //  2 seconds in counts equivalent
 #define OBJECT_LENGTH	5.4f // epuck lower body length in cm
-#define MAX_SPEED		7 //cm/s
+//#define MAX_SPEED		7 //cm/s
 
 // Static variables
 static enum State current_state = Detect;
-static uint16_t count = 0;
+static uint32_t count = 0;
 static uint16_t reference = 0;
 static uint16_t dist_to_perp = 0;
 
 /*
-*	aly will type it
+*	sets distance to the reference target, radar then captures objects passing between the reference and the robot
 *
 *	@params: none
 *	@return: none
 */
 static void set_reference(void) {  //you need to skip a bunch of measurments at startup because theyre not correct
-	reference = 0;
+	reference = 0; ////////////////////////////////////////////////////////////
+	set_body_led(1);///////////////////////////////////////////////////////////
 	for (uint32_t i = 0; i <= INIT_COUNTS; ++i) { //distance is only refreshed every 100ms if we add the print the correct values can be obtained after a bit under 10 cycles, without the print need to wait for at least 10000000
 		reference = VL53L0X_get_dist_mm();
 		//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", reference); //this needs to be kept here otherwise the tof has no time to get new measurments since it takes 100 ms
-	} //run 10buffer cycles
+	}
+	set_body_led(0);///////////////////////////////////////////////////////////
+	//run 10buffer cycles
 	//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", reference);
 
 	return;
@@ -82,12 +87,12 @@ void radar_measure_speed(void) {
 		//reference=distance; this should only be used if the object stays for a while infront of the tof to set a new reference
 		//chprintf((BaseSequentialStream *)&SD3, "%u \r\n", count);
 	}
-	/*
+////////////////////////////////////////////////////////////
 	if (count==1307190){
 		current_state = Chase;
 		count = 0;
 	}
-	*/
+//////////////////////////////////////////////////////
 #ifdef MAX_SPEED
 	else if (distance >= dist_to_perp + SENSITIVITY) {
 		float speed=OBJECT_LENGTH/(count/SECOND_COUNT); //en cm/s
@@ -101,6 +106,7 @@ void radar_measure_speed(void) {
 		count = 0;
 	}
 #else
+	/*////////////////////////////////////////////////////////////////////////
 	else if (distance >= dist_to_perp + SENSITIVITY) {
 		if (count <= MAX_COUNT) { //case object was fast \\pbl is this will acivate if the reference moves can make it more robust
 			//call function to estimate speed then activate the lights
@@ -111,7 +117,7 @@ void radar_measure_speed(void) {
 		dist_to_perp = distance;
 		count = 0;
 	}
-
+*////////////////////////////////////////////////////////////////////////////////
 #endif
 
 }
