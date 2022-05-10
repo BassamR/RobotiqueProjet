@@ -36,9 +36,9 @@ static THD_FUNCTION(SirenThd, arg) {
 		toggle_rgb_led(LED8, RED_LED, RGB_MAX_INTENSITY);
 
 		if(siren_freq==false) {
-			//dac_play(705);
+			dac_play(705);
 		} else {
-			//dac_play(933);
+			dac_play(933);
 		}
 
 		chThdSleepMilliseconds(500);
