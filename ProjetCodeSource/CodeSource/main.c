@@ -21,6 +21,7 @@
 #include <pi_regulator.h>
 #include <communications.h>
 
+#include <audio/audio_thread.h>
 #include <spi_comm.h>
 #include <siren.h>
 #include <pi_regulator.h>
