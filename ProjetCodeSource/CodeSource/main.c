@@ -27,7 +27,6 @@
 #include <pi_regulator.h>
 #include <radar.h>
 
-#include <leds.h> ///////////////////////////////////////////
 
 //#define PERP_EPUCK
 #define PERP_MAX_SPEED 615 // steps/s
@@ -65,14 +64,14 @@ int main(void) {
 	//start the speakers
 	dac_start();
     //start the radar (not a thread)
-    radar_start();
+	radar_start();
+
 #ifndef PERP_EPUCK
     while (true) {
-    	set_led(LED7,1); //////////////////////////////////////////
     	while (get_radar_state() == Detect) {
     		radar_measure_speed();
     	}
-    	set_led(LED7,0); ///////////////////////////////////////////
+
     	enableMicrophone();
 
     	//start the pid thread
