@@ -15,7 +15,7 @@
 #include <communications.h>
 #include <arm_math.h>
 
-#define EPUCK_SPEED 5 // cm/s
+#define EPUCK_SPEED 8 // cm/s
 
 static void serial_start(void) {
 	static SerialConfig ser_cfg = {
