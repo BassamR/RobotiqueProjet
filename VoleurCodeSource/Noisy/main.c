@@ -15,7 +15,10 @@
 #include <communications.h>
 #include <arm_math.h>
 
-#define EPUCK_SPEED 8 // cm/s
+#include <selector.h>
+
+#define EPUCK_SPEED_FAST 	8 // cm/s
+#define EPUCK_SPEED_SLOW 	5 // cm/s
 
 static void serial_start(void) {
 	static SerialConfig ser_cfg = {
@@ -62,12 +65,35 @@ int main(void) {
 	//start the speakers
 	dac_start();
 
-	//dac_play(500);
-	right_motor_set_speed(EPUCK_SPEED*1000/13);
-	left_motor_set_speed(EPUCK_SPEED*1000/13);
-
     /* Infinite loop. */
     while (1) {
+    	switch(get_selector()) {
+    	case 1: //fast with noise
+    		dac_play(440);
+    		right_motor_set_speed(EPUCK_SPEED_FAST*1000/13);
+    		left_motor_set_speed(EPUCK_SPEED_FAST*1000/13);
+    		break;
+    	case 2: //slow with noise
+    		dac_play(440);
+    		right_motor_set_speed(EPUCK_SPEED_SLOW*1000/13);
+    		left_motor_set_speed(EPUCK_SPEED_SLOW*1000/13);
+    		break;
+    	case 3: //fast without noise
+    		dac_stop();
+    		right_motor_set_speed(EPUCK_SPEED_FAST*1000/13);
+    		left_motor_set_speed(EPUCK_SPEED_FAST*1000/13);
+    		break;
+    	case 4: //slow without noise
+    		dac_stop();
+    		right_motor_set_speed(EPUCK_SPEED_SLOW*1000/13);
+    		left_motor_set_speed(EPUCK_SPEED_SLOW*1000/13);
+    		break;
+    	default: //do nothing by default
+    		dac_stop();
+    		right_motor_set_speed(0);
+    		left_motor_set_speed(0);
+    		break;
+    	}
 
     }
 }
