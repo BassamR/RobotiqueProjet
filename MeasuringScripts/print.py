@@ -11,7 +11,7 @@ numOfSamples = 20
 while(1):
     r = ser.readline()
     #r = r[0:len(r)-1] #to get rid of \n
-    #print(r)
+    print(r)
     angleArray.append(int(r))
     if(len(angleArray) > numOfSamples+1):
         print("finished")
