@@ -27,10 +27,6 @@
 #include <pi_regulator.h>
 #include <radar.h>
 
-
-//#define PERP_EPUCK
-#define PERP_MAX_SPEED 615 // steps/s
-
 static void serial_start(void) {
 	static SerialConfig ser_cfg = {
 	    115200,
@@ -66,27 +62,21 @@ int main(void) {
     //start the radar (not a thread)
 	radar_start();
 
-#ifndef PERP_EPUCK
     while (true) {
     	while (get_radar_state() == Detect) {
     		radar_measure_speed();
     	}
 
     	enableMicrophone();
-
     	//start the pid thread
     	pi_regulator_start();
     	//start the siren thread
     	siren_start();
 
     	while (get_radar_state() == Chase) {
-    		//chprintf((BaseSequentialStream *)&SD3, "%nChase mode is active \r\n"); do stuff
+
     	}
     }
-#else
-    right_motor_set_speed(PERP_MAX_SPEED);
-    left_motor_set_speed(PERP_MAX_SPEED);
-#endif
 }
 
 
