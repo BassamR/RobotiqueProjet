@@ -11,11 +11,9 @@
 extern "C" {
 #endif
 
-//#include "camera/dcmi_camera.h"  // why do we need this
 #include "msgbus/messagebus.h"
 #include "parameter/parameter.h"
 
-uint16_t set_ref(void);
 /** Robot wide IPC bus. */
 extern messagebus_t bus;
 
@@ -25,4 +23,4 @@ extern parameter_namespace_t parameter_root;
 }
 #endif
 
-#endif
+#endif /* MAIN_H */
