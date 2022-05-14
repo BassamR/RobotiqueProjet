@@ -21,6 +21,7 @@
 #include <pi_regulator.h>
 #include <communications.h>
 
+#include <audio/audio_thread.h>
 #include <spi_comm.h>
 #include <siren.h>
 #include <pi_regulator.h>
@@ -59,7 +60,7 @@ int main(void) {
 	//start the speakers
 	dac_start();
     //start the radar (not a thread)
-    radar_start();
+	radar_start();
 
     while (true) {
     	while (get_radar_state() == Detect) {
@@ -67,14 +68,13 @@ int main(void) {
     	}
 
     	enableMicrophone();
-
     	//start the pid thread
     	pi_regulator_start();
     	//start the siren thread
     	siren_start();
 
     	while (get_radar_state() == Chase) {
-    		//chprintf((BaseSequentialStream *)&SD3, "%nChase mode is active \r\n"); do stuff
+
     	}
     }
 }
