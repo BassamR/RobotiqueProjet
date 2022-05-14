@@ -67,14 +67,15 @@ int main(void) {
     		radar_measure_speed();
     	}
 
+    	//enables microphone functionalities
     	enableMicrophone();
     	//start the pid thread
     	pi_regulator_start();
     	//start the siren thread
     	siren_start();
 
-    	while (get_radar_state() == Chase) {
-
+    	while(get_radar_state() == Chase) {
+    		chThdSleepMilliseconds(1000);
     	}
     }
 }
@@ -86,4 +87,3 @@ uintptr_t __stack_chk_guard = STACK_CHK_GUARD;
 void __stack_chk_fail(void) {
     chSysHalt("Stack smashing detected");
 }
-
