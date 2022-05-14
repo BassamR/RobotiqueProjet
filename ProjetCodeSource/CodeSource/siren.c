@@ -35,7 +35,7 @@ static THD_FUNCTION(SirenThd, arg) {
 		toggle_rgb_led(LED6, BLUE_LED, RGB_MAX_INTENSITY);
 		toggle_rgb_led(LED8, RED_LED, RGB_MAX_INTENSITY);
 
-		if(siren_freq==false) {
+		if(siren_freq == false) {
 			dac_play(705);
 		} else {
 			dac_play(933);

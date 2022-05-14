@@ -26,7 +26,7 @@
 // General Constants
 #define SOUND_SPEED 			34300 	// cm/s
 #define MIC_DISTANCE    		6.0f  	// cm
-#define AMPLITUDE_THRESHOLD		13000
+#define AMPLITUDE_THRESHOLD		10000
 #define FREQ_THRESHOLD 			70
 #define FREQ_MIN				5
 #define FREQ_MAX				40
@@ -61,12 +61,6 @@ static float micBackOutputDB[FFT_SIZE];
 // Extra static variables and functions
 static int16_t positionInBuffer = 0;
 static bool micEnable = false;
-
-//#define SEND_TO_COMPUTER
-
-#ifdef SEND_TO_COMPUTER
-static int sendToComputer = 0;
-#endif
 
 /*
 *	Callback called when the demodulation of the four microphones is done.
@@ -136,35 +130,6 @@ void processAudioData(int16_t *data, uint16_t num_samples) {
 			micBackOutputDB[i] = micBack_output[i];
 		}
 #endif
-
-		//send to computer
-#ifdef SEND_TO_COMPUTER
-		if(sendToComputer == 5) {
-			//chBSemSignal(&sendToComputer_sem);
-			sendToComputer = 0;
-
-			//call functions that need audio data
-			int16_t robotAngle = getAngleFromSource();
-			//chprintf((BaseSequentialStream *)&SDU1, "%nAngle=%.7d \r\n", robotAngle);
-			chprintf((BaseSequentialStream *)&SDU1, "%nMaxFreqAmplitude=%f \r\n", maxAmplitudeTest);
-
-//			int maxFreqLeft = 0;
-//			float maxLeftOutput = 0;
-//			for(int i = 5; i < FFT_SIZE/2; ++i) {
-//				//start from i=5 as to not consider low freq
-//				if(micLeft_output[i] > maxLeftOutput) {
-//					maxLeftOutput = micLeft_output[i]; //contains the biggest amplitude of the FFT
-//					maxFreqLeft = i; //contains the index at which we have the biggest amplitude
-//				}
-//			}
-//
-//			chprintf((BaseSequentialStream *)&SDU1, "%nFreqIndex=%.7d \r\n", maxFreqLeft);
-
-		} else {
-			++sendToComputer;
-		}
-#endif
-
 	}
 }
 
@@ -268,8 +233,8 @@ int16_t getAngleFromSource(void) {
 	// Calculate time shift at max amplitude frequency using FFT argument
 	float micLeftArg = atan2f(micLeftInputDB[2*maxFreq + 1], micLeftInputDB[2*maxFreq]);
 	float micRightArg = atan2f(micRightInputDB[2*maxFreq + 1], micRightInputDB[2*maxFreq]);
-	float timeShift = (micRightArg - micLeftArg) / (2 * M_PI * maxFreq * FREQ_RESOLUTION); //time difference of arrival;
-	//chprintf((BaseSequentialStream *)&SD3, "%ntimeShift=%f \r\n", timeShift);
+	//time difference of arrival
+	float timeShift = (micRightArg - micLeftArg) / (2 * M_PI * maxFreq * FREQ_RESOLUTION);
 
 	// Calculate angle in deg
 	float cosineArgument = SOUND_SPEED * timeShift/MIC_DISTANCE;
