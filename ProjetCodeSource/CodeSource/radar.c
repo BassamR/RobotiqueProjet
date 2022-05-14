@@ -11,16 +11,17 @@
 #include "ch.h"
 #include "hal.h"
 #include <chprintf.h>
-#include <radar.h>
+#include <usbcfg.h>
 
+#include <radar.h>
 
 // General constants
 #define INIT_COUNTS		10000000
-#define MAX_COUNT 		2811162 //2 second count
-#define SENSITIVITY	20	//mm
-#define SECOND_COUNT	1405581 //  1 seconds in counts equivalent
-#define OBJECT_LENGTH	7.3f // epuck diameter
-#define MAX_SPEED		7 //cm/s
+#define MAX_COUNT 		2811162 	//2 second count
+#define SENSITIVITY		20			//mm
+#define SECOND_COUNT	1405581 	//1 seconds in counts equivalent
+#define OBJECT_LENGTH	7.3f 		//epuck diameter
+#define MAX_SPEED		7 			//cm/s, also decides whether to use max speed in cm/s or in counts/s
 
 // Static variables
 static enum State current_state = Detect;
@@ -28,8 +29,12 @@ static uint32_t count = 0;
 static uint16_t reference = 0;
 static uint16_t dist_to_perp = 0;
 
+
+/* Uncomment to send measured speed to computer*/
+//#define SEND_SPEED_TO_COMPUTER
+
 /*
-*	sets distance to the reference target, radar then captures objects passing between the reference and the robot
+*	Sets distance to the reference target, radar then captures objects passing between the reference and the robot
 *
 *	@params: none
 *	@return: none
@@ -73,28 +78,32 @@ enum State get_radar_state(void) {
 */
 void radar_measure_speed(void) {
 	uint16_t distance = VL53L0X_get_dist_mm();
-	if (distance <= reference - SENSITIVITY) {
+	if(distance <= reference - SENSITIVITY) {
 		++count;
 		dist_to_perp = distance;
 	}
 #ifdef MAX_SPEED
-	else if (distance >= dist_to_perp+SENSITIVITY) {
+	else if(distance >= dist_to_perp+SENSITIVITY) {
 		float speed = OBJECT_LENGTH/((float)count/(float)SECOND_COUNT); //en cm/s
 		if (speed >= (float)MAX_SPEED) {
 			current_state = Chase;
 		}
-		chprintf((BaseSequentialStream *)&SD3, "Epuck measured speed is : %f \r\n",speed);
+#ifdef SEND_SPEED_TO_COMPUTER
+		chprintf((BaseSequentialStream *)&SDU1, "Epuck measured speed is: %f \r\n", speed);
+#endif
 		dist_to_perp = distance;
 		count = 0;
 	}
 #else
 
-	else if (distance >= dist_to_perp + SENSITIVITY) {
-		if (count <= MAX_COUNT) {
+	else if(distance >= dist_to_perp + SENSITIVITY) {
+		if(count <= MAX_COUNT) {
 			current_state = Chase;
 		}
 		float time_pass = (float)count/(float)SECOND_COUNT;
-		chprintf((BaseSequentialStream *)&SD3, "%f \r\n", time_pass);
+#ifdef SEND_SPEED_TO_COMPUTER
+		chprintf((BaseSequentialStream *)&SDU1, "Epuck measured counts are: %f \r\n", time_pass);
+#endif
 		dist_to_perp = distance;
 		count = 0;
 	}

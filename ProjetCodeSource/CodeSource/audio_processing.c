@@ -252,7 +252,5 @@ int16_t getAngleFromSource(void) {
 
 	prevAngle = angle;
 
-	//chprintf((BaseSequentialStream *)&SD3, "%nAngle=%.2f \r\n", angle);
-
 	return angle;
 }
