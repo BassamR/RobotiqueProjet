@@ -1,3 +1,9 @@
+/*
+* @name		communications.h
+* @author 	Micro-315 team
+* @date 	Mai 2022
+*/
+
 #ifndef COMMUNICATIONS_H
 #define COMMUNICATIONS_H
 
