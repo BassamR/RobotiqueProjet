@@ -29,6 +29,10 @@ static uint32_t count = 0;
 static uint16_t reference = 0;
 static uint16_t dist_to_perp = 0;
 
+
+/* Uncomment to send measured speed to computer*/
+//#define SEND_SPEED_TO_COMPUTER
+
 /*
 *	Sets distance to the reference target, radar then captures objects passing between the reference and the robot
 *
@@ -84,7 +88,9 @@ void radar_measure_speed(void) {
 		if (speed >= (float)MAX_SPEED) {
 			current_state = Chase;
 		}
-		chprintf((BaseSequentialStream *)&SDU1, "Epuck measured speed is : %f \r\n", speed);
+#ifdef SEND_SPEED_TO_COMPUTER
+		chprintf((BaseSequentialStream *)&SDU1, "Epuck measured speed is: %f \r\n", speed);
+#endif
 		dist_to_perp = distance;
 		count = 0;
 	}
@@ -95,7 +101,9 @@ void radar_measure_speed(void) {
 			current_state = Chase;
 		}
 		float time_pass = (float)count/(float)SECOND_COUNT;
-		chprintf((BaseSequentialStream *)&SDU1, "%f \r\n", time_pass);
+#ifdef SEND_SPEED_TO_COMPUTER
+		chprintf((BaseSequentialStream *)&SDU1, "Epuck measured counts are: %f \r\n", time_pass);
+#endif
 		dist_to_perp = distance;
 		count = 0;
 	}
