@@ -13,6 +13,9 @@
 #include <audio/audio_thread.h>
 #include <selector.h>
 
+#include <spi_comm.h>
+#include <leds.h>
+
 #define EPUCK_SPEED_FAST 	8 // cm/s
 #define EPUCK_SPEED_SLOW 	5 // cm/s
 
@@ -22,6 +25,8 @@ int main(void) {
     chSysInit();
     mpu_init();
 
+    //init leds, to make sure they stay turned off
+    spi_comm_start();
     //inits the motors
     motors_init();
 	//start the speakers
